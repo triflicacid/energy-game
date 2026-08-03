@@ -13,3 +13,5 @@ export type {
 export type { ValidationIssue } from "./validate";
 export type { RawCatalogs, LoadResult } from "./ContentLoader";
 export { ContentLoader, loadBundledContent } from "./ContentLoader";
+export type { SemanticIssue, SemanticResult } from "./IndexedCatalog";
+export { IndexedCatalog, buildIndexedCatalog } from "./IndexedCatalog";
