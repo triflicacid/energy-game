@@ -23,9 +23,9 @@
     "eslint": "^10.7.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.64.0",
-    "vitest": "^3.2.4",
     "vite": "^8.1.4",
-    "vite-plugin-singlefile": "^2.3.3"
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^3.2.4"
   },
   "private": true,
   "dependencies": {
