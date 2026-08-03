@@ -17,6 +17,10 @@ export interface SiteTemplateDef {
   readonly templateId: string;
   /** facility site-type tags that determine which facilities may be built here */
   readonly tags: readonly string[];
+  /** tile offset from the sector centre along the x axis */
+  readonly x: number;
+  /** tile offset from the sector centre along the y axis */
+  readonly y: number;
 }
 
 /** immutable definition of a map sector */
@@ -27,6 +31,12 @@ export interface SectorDef {
   readonly biome: BiomeId;
   /** shortest-path distance in sector-graph edges from the designated centre sector */
   readonly distanceFromCentre: number;
+  /** sector width and height in tiles; determines visual footprint on the campaign map */
+  readonly diameter: number;
+  /** axial hex-grid column on the campaign map (0 for the centre sector) */
+  readonly gridQ: number;
+  /** axial hex-grid row on the campaign map (0 for the centre sector) */
+  readonly gridR: number;
   /** site templates pre-defined in this sector */
   readonly siteTemplates: readonly SiteTemplateDef[];
   /** whether a starting town is generated in this sector on campaign initialisation */

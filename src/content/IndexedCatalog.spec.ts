@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { BiomeId } from "@shared/IdCounter";
 import type { ContentBundle, ResearchNodeDef, ResourceDef, SectorDef } from "./defs";
 import { loadBundledContent } from "./ContentLoader";
 import { buildIndexedCatalog } from "./IndexedCatalog";
@@ -17,9 +18,12 @@ function sector(id: string, tags: string[][] = []): SectorDef {
   return {
     id,
     name: id,
-    biome: "temperate",
+    biome: "temperate" as BiomeId,
     distanceFromCentre: 0,
-    siteTemplates: tags.map((t, i) => ({ templateId: `${id}-site-${i}`, tags: t })),
+    diameter: 10,
+    gridQ: 0,
+    gridR: 0,
+    siteTemplates: tags.map((t, i) => ({ templateId: `${id}-site-${i}`, tags: t, x: i, y: 0 })),
     hasTown: false,
     initialAccessState: "buildable",
   };

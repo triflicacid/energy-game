@@ -95,22 +95,20 @@ F01 + F02 + F03 + C01
      └─ ✅ S01 campaign state and event history
          ├─ ✅ S02 inventory and recipe execution
          ├─ ✅ S03 research progression
-         └─ M00 hand-authored centre sector
+         └─ ✅ M00 hand-authored centre sector
 
 S02 + S03 + M00
  └─ V00 forestry and timber
      └─ V01 mechanical power
          └─ V02 first headless vertical slice
+             ├─ P00 save/load
+             └─ E00 iron/copper extraction and processing
 
-V02
- ├─ P00 save/load
- ├─ U00 browser application shell
- └─ E00 iron/copper extraction and processing
-
-U00
- ├─ A00 sprite-atlas pipeline
- │   └─ U01 one-sector canvas map
- └─ U02 HTML status/build/research UI
+F00
+ └─ A00 sprite-atlas pipeline          (no simulation dependency; can run now)
+     └─ U00 browser application shell
+         ├─ U01 one-sector canvas map (+ M00)
+         └─ U02 HTML status/build/research UI (+ S02 + S03 + V01)
 
 E00 + V02
  └─ E01 dynamo and first electricity
@@ -461,7 +459,7 @@ Integrate a tested scenario:
 
 ## U00 — Browser application shell
 
-**Depends on:** V02, F00
+**Depends on:** A00, F00
 
 **Read:** UI sections of `plan/code-architecture.md`
 
@@ -476,7 +474,7 @@ Integrate a tested scenario:
 
 ## A00 — Initial sprite-atlas pipeline
 
-**Depends on:** U00
+**Depends on:** F00
 
 **Read:** `plan/sprites-and-atlases.md`
 

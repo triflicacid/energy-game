@@ -55,6 +55,18 @@ function readNum(o: Record<string, unknown>, f: string, positive: boolean): numb
   return v as number;
 }
 
+/** reads any finite number from an object, including negative values; returns null if absent or non-finite */
+function readFiniteNum(o: Record<string, unknown>, f: string): number | null {
+  const v = o[f];
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+/** reads a finite integer from an object, including negative values; returns null if absent, non-finite, or fractional */
+function readIntNum(o: Record<string, unknown>, f: string): number | null {
+  const v = o[f];
+  return typeof v === "number" && Number.isFinite(v) && Number.isInteger(v) ? v : null;
+}
+
 /**
  * reads an array-of-strings field from an object.
  * pushes an issue for each element that is not a non-empty string.
@@ -351,8 +363,12 @@ export function validateSiteTemplateDef(
   const templateId = readStr(o, "templateId");
   if (!templateId) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `siteTemplates[${templateIndex}].templateId`, message: "must be a non-empty string" });
   const tags = readStringArray(o, "tags", issues, catalog, index, sectorId);
-  if (!templateId || !tags) return null;
-  return { templateId, tags };
+  const x = readFiniteNum(o, "x");
+  if (x === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `siteTemplates[${templateIndex}].x`, message: "must be a finite number" });
+  const y = readFiniteNum(o, "y");
+  if (y === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `siteTemplates[${templateIndex}].y`, message: "must be a finite number" });
+  if (!templateId || !tags || x === null || y === null) return null;
+  return { templateId, tags, x, y };
 }
 
 /** validates one raw sector definition entry, accumulating issues and returning the typed def or null */
@@ -375,6 +391,12 @@ export function validateSectorDef(
   if (!biome) issues.push({ catalog, itemIndex: index, itemId: id, path: "biome", message: "must be a non-empty string" });
   const distanceFromCentre = readNum(o, "distanceFromCentre", false);
   if (distanceFromCentre === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "distanceFromCentre", message: "must be a finite non-negative number" });
+  const diameter = readNum(o, "diameter", true);
+  if (diameter === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "diameter", message: "must be a finite positive number" });
+  const gridQ = readIntNum(o, "gridQ");
+  if (gridQ === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "gridQ", message: "must be a finite integer" });
+  const gridR = readIntNum(o, "gridR");
+  if (gridR === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "gridR", message: "must be a finite integer" });
   const hasTown = readBool(o, "hasTown");
   if (hasTown === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "hasTown", message: "must be a boolean" });
 
@@ -400,7 +422,7 @@ export function validateSectorDef(
     if (!ok) siteTemplates = null;
   }
 
-  if (!id || !name || !biome || distanceFromCentre === null || hasTown === null || !initialAccessState || !siteTemplates) return null;
-  return { id, name, biome: makeBiomeId(biome), distanceFromCentre, siteTemplates, hasTown, initialAccessState };
+  if (!id || !name || !biome || distanceFromCentre === null || diameter === null || gridQ === null || gridR === null || hasTown === null || !initialAccessState || !siteTemplates) return null;
+  return { id, name, biome: makeBiomeId(biome), distanceFromCentre, diameter, gridQ, gridR, siteTemplates, hasTown, initialAccessState };
 }
 
