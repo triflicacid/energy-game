@@ -4,7 +4,7 @@
   "padding": 2,
   "maxWidth": 2048,
   "maxHeight": 2048,
-  "outputPng": "src/rendering/generated/world-atlas.png",
+  "outputPng": "static/world-atlas.png",
   "outputTs": "src/rendering/generated/world-atlas.ts",
   "sprites": [
     {

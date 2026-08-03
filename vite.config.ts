@@ -8,6 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [viteSingleFile()],
   base: "./",
+  publicDir: "static",
   resolve: {
     alias: {
       "@application": resolve(__dirname, "src/application"),
