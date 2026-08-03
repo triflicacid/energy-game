@@ -26,8 +26,6 @@ export default defineConfig({
   },
   build: {
     outDir: "dist/web",
-    // electron/main.ts is compiled separately into dist/electron; don't let
-    // the client build wipe it out.
-    emptyOutDir: false,
+    emptyOutDir: true,
   },
 });

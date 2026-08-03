@@ -14,6 +14,43 @@ class Player {
 }
 ```
 
+## access modifiers
+
+always write explicit access modifiers on every class member, even where typescript would infer them.
+
+```ts
+// bad
+class Foo {
+    value = 0;
+    getValue() { return this.value; }
+}
+
+// good
+class Foo {
+    private value = 0;
+    public getValue() { return this.value; }
+}
+```
+
+this is enforced by `@typescript-eslint/explicit-member-accessibility`.
+
+use typescript parameter properties to declare and assign constructor dependencies in one place.
+
+```ts
+// bad
+class Foo {
+    private readonly bar: Bar;
+    public constructor(bar: Bar) {
+        this.bar = bar;
+    }
+}
+
+// good
+class Foo {
+    public constructor(private readonly bar: Bar) {}
+}
+```
+
 ## classes and inheritance
 
 prefer classes over loose functions and plain objects. model domain concepts as types in a hierarchy.
