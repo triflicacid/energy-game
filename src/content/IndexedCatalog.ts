@@ -11,11 +11,11 @@ import type {
 } from "./defs";
 
 /** a single semantic validation failure */
-export interface SemanticIssue {
+export type SemanticIssue = {
   readonly catalog: string;
   readonly itemId: string;
   readonly message: string;
-}
+};
 
 /** discriminated union returned by buildIndexedCatalog */
 export type SemanticResult =
@@ -76,7 +76,7 @@ export class IndexedCatalog {
 
 /** checks each catalog for duplicate IDs and pushes an issue for each one found */
 function checkDuplicateIds(bundle: ContentBundle, issues: SemanticIssue[]): void {
-  const catalogs: Array<[string, readonly { id: string }[]]> = [
+  const catalogs: [string, readonly { id: string }[]][] = [
     ["resources", bundle.resources],
     ["recipes", bundle.recipes],
     ["facilities", bundle.facilities],
@@ -204,7 +204,7 @@ function checkResearchCycles(bundle: ContentBundle, issues: SemanticIssue[]): vo
   for (const node of bundle.researchNodes) {
     for (const parentId of node.parentIds) {
       if (!children.has(parentId)) continue;
-      children.get(parentId)!.push(node.id);
+      children.get(parentId)?.push(node.id);
       inDegree.set(node.id, (inDegree.get(node.id) ?? 0) + 1);
     }
   }
@@ -314,7 +314,7 @@ function checkCircularUnlocks(bundle: ContentBundle, issues: SemanticIssue[]): v
   for (const node of bundle.researchNodes) {
     for (const unlockId of node.unlockIds) {
       if (!researchIds.has(unlockId)) continue;
-      unlockChildren.get(node.id)!.push(unlockId);
+      unlockChildren.get(node.id)?.push(unlockId);
       inDegree.set(unlockId, (inDegree.get(unlockId) ?? 0) + 1);
     }
   }

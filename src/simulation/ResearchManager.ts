@@ -26,8 +26,8 @@ export class ResearchManager<TMap extends ResearchEventMap>
   implements JsonSerializable<ResearchProgressState>
 {
   private readonly nodes: ReadonlyMap<string, ResearchNodeDef>;
-  private readonly completed: Set<string> = new Set();
-  private readonly progress: Map<string, number> = new Map();
+  private readonly completed = new Set<string>();
+  private readonly progress = new Map<string, number>();
 
   public constructor(
     nodeDefs: readonly ResearchNodeDef[],
@@ -46,7 +46,7 @@ export class ResearchManager<TMap extends ResearchEventMap>
     return [...this.nodes.keys()].filter(
       (id) =>
         !this.completed.has(id) &&
-        this.nodes.get(id)!.parentIds.every((pid) => this.completed.has(pid)),
+        (this.nodes.get(id)?.parentIds ?? []).every((pid) => this.completed.has(pid)),
     );
   }
 
@@ -81,13 +81,13 @@ export class ResearchManager<TMap extends ResearchEventMap>
     if (!Number.isFinite(points) || points < 0) {
       throw new RangeError(`points must be a finite non-negative number, got ${points}`);
     }
-    if (!this.nodes.has(nodeId)) {
+    const node = this.nodes.get(nodeId);
+    if (node === undefined) {
       return { ok: false, reason: `unknown research node: ${nodeId}` };
     }
     if (this.completed.has(nodeId)) {
       return { ok: false, reason: `already completed: ${nodeId}` };
     }
-    const node = this.nodes.get(nodeId)!;
     const prerequisitesMet = node.parentIds.every((pid) => this.completed.has(pid));
     if (!prerequisitesMet) {
       return { ok: false, reason: `prerequisites not met for: ${nodeId}` };

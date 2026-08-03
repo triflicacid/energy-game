@@ -11,7 +11,7 @@ import researchJson from "./fixtures/research.json";
 import sectorsJson from "./fixtures/sectors.json";
 
 /** raw catalog inputs accepted by the loader — each field is unknown to enforce validation */
-export interface RawCatalogs {
+export type RawCatalogs = {
   readonly resources: unknown;
   readonly recipes: unknown;
   readonly facilities: unknown;
@@ -19,7 +19,7 @@ export interface RawCatalogs {
   readonly researchNodes: unknown;
   /** optional; defaults to an empty array when omitted */
   readonly sectors?: unknown;
-}
+};
 
 /** discriminated union returned by the loader */
 export type LoadResult =

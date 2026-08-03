@@ -20,7 +20,7 @@ export type InventoryEventMap = {
 export class Inventory<TMap extends InventoryEventMap>
   implements JsonSerializable<InventoryState>
 {
-  private readonly quantities: Map<ResourceId, number> = new Map();
+  private readonly quantities = new Map<ResourceId, number>();
 
   public constructor(private readonly bus: EventBus<TMap>) {}
 

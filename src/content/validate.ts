@@ -16,13 +16,13 @@ import type {
 } from "./defs";
 
 /** a single structural validation failure with location and description */
-export interface ValidationIssue {
+export type ValidationIssue = {
   readonly catalog: string;
   readonly itemIndex: number;
   readonly itemId: string | null;
   readonly path: string;
   readonly message: string;
-}
+};
 
 /** narrows an unknown value to a plain object, returning null if it is a primitive, null, or array */
 function asRecord(v: unknown): Record<string, unknown> | null {

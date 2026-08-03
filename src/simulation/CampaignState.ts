@@ -151,4 +151,3 @@ export function deserializeCampaignState(data: unknown): CampaignState {
   }
   return raw as unknown as CampaignState;
 }
-

@@ -12,7 +12,7 @@ export type SectorAccessState =
   | "buildable";
 
 /** a named construction site template within a sector definition */
-export interface SiteTemplateDef {
+export type SiteTemplateDef = {
   /** stable identifier for this site template within its parent sector */
   readonly templateId: string;
   /** facility site-type tags that determine which facilities may be built here */
@@ -21,10 +21,10 @@ export interface SiteTemplateDef {
   readonly x: number;
   /** tile offset from the sector centre along the y axis */
   readonly y: number;
-}
+};
 
 /** immutable definition of a map sector */
-export interface SectorDef {
+export type SectorDef = {
   readonly id: string;
   readonly name: string;
   /** biome or environment tag used for exploration/construction permission checks */
@@ -43,16 +43,16 @@ export interface SectorDef {
   readonly hasTown: boolean;
   /** access state assigned to this sector when a new campaign is created */
   readonly initialAccessState: SectorAccessState;
-}
+};
 
 /** a quantity of a named resource used in recipes and construction costs */
-export interface ResourceRef {
+export type ResourceRef = {
   readonly resourceId: ResourceId;
   readonly qty: number;
-}
+};
 
 /** immutable definition of a storable/tradeable material */
-export interface ResourceDef {
+export type ResourceDef = {
   readonly id: ResourceId;
   readonly category: string;
   readonly unit: string;
@@ -61,10 +61,10 @@ export interface ResourceDef {
   readonly renewable: boolean;
   readonly waste: boolean;
   readonly hazardous: boolean;
-}
+};
 
 /** describes inputs, outputs, power requirements, and duration for one production step */
-export interface RecipeDef {
+export type RecipeDef = {
   readonly id: string;
   readonly inputs: readonly ResourceRef[];
   readonly outputs: readonly ResourceRef[];
@@ -73,10 +73,10 @@ export interface RecipeDef {
   readonly mechPowerKW: number;
   readonly requiredResearch: readonly string[];
   readonly requiredCapabilities: readonly string[];
-}
+};
 
 /** immutable definition of a buildable facility */
-export interface FacilityDef {
+export type FacilityDef = {
   readonly id: string;
   readonly behaviorId: string;
   readonly validSiteTags: readonly string[];
@@ -87,10 +87,10 @@ export interface FacilityDef {
   readonly recipeIds: readonly string[];
   readonly upgradeIds: readonly string[];
   readonly capabilities: readonly string[];
-}
+};
 
 /** immutable definition of a facility upgrade */
-export interface UpgradeDef {
+export type UpgradeDef = {
   readonly id: string;
   readonly applicableFacilityIds: readonly string[];
   readonly requiredResearch: readonly string[];
@@ -98,24 +98,23 @@ export interface UpgradeDef {
   readonly constructionCost: readonly ResourceRef[];
   readonly constructionMoneyBase: number;
   readonly constructionTimeHours: number;
-}
+};
 
 /** immutable definition of a research tree node */
-export interface ResearchNodeDef {
+export type ResearchNodeDef = {
   readonly id: string;
   readonly era: string;
   readonly parentIds: readonly string[];
   readonly researchCost: number;
   readonly unlockIds: readonly string[];
-}
+};
 
 /** all typed content definitions produced by a successful load */
-export interface ContentBundle {
+export type ContentBundle = {
   readonly resources: readonly ResourceDef[];
   readonly recipes: readonly RecipeDef[];
   readonly facilities: readonly FacilityDef[];
   readonly upgrades: readonly UpgradeDef[];
   readonly researchNodes: readonly ResearchNodeDef[];
   readonly sectors: readonly SectorDef[];
-}
-
+};
