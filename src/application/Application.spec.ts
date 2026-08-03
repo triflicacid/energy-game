@@ -54,6 +54,20 @@ describe("Application", () => {
     app.dispose();
   });
 
+  it("getCampaignState() returns a state with at least one sector after construction", () => {
+    const app = makeApp();
+    const state = app.getCampaignState();
+    expect(Object.keys(state.sectors).length).toBeGreaterThan(0);
+    app.dispose();
+  });
+
+  it("getCatalog() returns a catalog with the centre sector definition", () => {
+    const app = makeApp();
+    const catalog = app.getCatalog();
+    expect(catalog.sectors.has("centre")).toBe(true);
+    app.dispose();
+  });
+
   it("does not start the frame loop before start() is called", () => {
     makeApp();
     expect(scheduler.requestAnimationFrame).not.toHaveBeenCalled();

@@ -567,17 +567,21 @@ Integrate a tested scenario:
 
 **Depends on:** U01d, U02
 
-**Read:** construction-mode and anchoring sections of `plan/sprites-and-atlases.md`
+**Read:** construction-mode and anchoring sections of `plan/sprites-and-atlases.md`, camera and navigation section of `plan/map-and-regions.md`
 
 **Deliverables:**
 
-- Add world/screen transforms, bounded pan/zoom, resize handling, and spatial hit testing using one shared coordinate model.
+- Implement two rendering modes on one canvas: **sector detail view** and **campaign map view**, as defined in the camera and navigation section of `plan/map-and-regions.md`.
+- Sector detail view: world/screen transforms, pan bounded to the sector tile grid, scroll-wheel zoom bounded between show-all-sector minimum and a tunable maximum, resize handling, and spatial hit testing.
+- Campaign map view: hex-node layout at axial `(gridQ, gridR)` positions, pan and zoom over the hex graph, click-to-enter-sector, and placeholder hex rendering (full visual design is deferred to Phase 5).
+- `M` key toggles between sector detail and campaign map views; must not fire when keyboard focus is inside a text input or dialog.
+- Shift+scroll zooming outward beyond a tunable threshold in sector detail view transitions to campaign map view.
 - Render selection and placement footprint previews independently from sprite opaque bounds.
 - Accept eligible cells/footprints from a typed application placement query and draw a faint construction-suitability outline only while construction mode is active.
 - Update highlights when facility choice, rotation, ownership, occupancy, research/biome access, or placement state changes.
 - Keep placement decisions out of the renderer; it presents eligibility but never calculates or mutates it.
 
-**Acceptance:** transform round trips and hit tests are unit tested across zoom/DPR values; highlights align to gameplay footprints, update with eligibility, and disappear on mode exit; invalid cells are not highlighted; rendering remains deterministic for equal scene and viewport state.
+**Acceptance:** transform round trips and hit tests are unit tested across zoom/DPR values; highlights align to gameplay footprints, update with eligibility, and disappear on mode exit; invalid cells are not highlighted; rendering remains deterministic for equal scene and viewport state; `M` key switches views and shift+scroll-out triggers the view transition at the documented threshold; the `M` key is inert when a text input or dialog has focus.
 
 ## U02 — Initial HTML UI
 

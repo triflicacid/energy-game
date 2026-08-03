@@ -9,6 +9,10 @@ import {
   type SpeedMultiplier,
 } from "@simulation/SimulationClock";
 import { FrameLoopController } from "@simulation/FrameLoopController";
+import { loadBundledContent } from "@content/ContentLoader";
+import { buildIndexedCatalog, type IndexedCatalog } from "@content/IndexedCatalog";
+import { createCampaignState, type CampaignState, type ReadonlyCampaignState } from "@simulation/CampaignState";
+import { createCentreSector } from "@simulation/CentreSector";
 
 /** merged event map for the application bus; grows as subsystems are added */
 export type AppEventMap = SimClockEventMap;
@@ -27,6 +31,8 @@ export class Application implements Disposable {
   private readonly bus: EventBus<AppEventMap>;
   private readonly frameLoop: FrameLoopController;
   private readonly clock: SimulationClock;
+  private readonly catalog: IndexedCatalog;
+  private readonly campaignState: CampaignState;
   private accumulatedMs = 0;
   private lastTimestamp: number | null = null;
   private started = false;
@@ -40,6 +46,18 @@ export class Application implements Disposable {
     this.clock = new SimulationClock(this.bus);
     this.clock.pause();
     this.frameLoop = new FrameLoopController(this.onFrame);
+
+    const loadResult = loadBundledContent();
+    if (!loadResult.ok) {
+      throw new Error(`content validation failed: ${loadResult.issues[0]?.message ?? "unknown error"}`);
+    }
+    const catalogResult = buildIndexedCatalog(loadResult.bundle);
+    if (!catalogResult.ok) {
+      throw new Error(`content semantic error: ${catalogResult.issues[0]?.message ?? "unknown error"}`);
+    }
+    this.catalog = catalogResult.catalog;
+    this.campaignState = createCampaignState({ seed: 1 });
+    createCentreSector(this.campaignState, this.catalog);
   }
 
   /** returns the canvas element this application renders into */
@@ -63,6 +81,16 @@ export class Application implements Disposable {
   /** returns the simulation clock; consumers may read state but must not advance it */
   public getClock(): SimulationClock {
     return this.clock;
+  }
+
+  /** returns the indexed content catalog; consumers must not mutate it */
+  public getCatalog(): IndexedCatalog {
+    return this.catalog;
+  }
+
+  /** returns a read-only snapshot of the current campaign state */
+  public getCampaignState(): ReadonlyCampaignState {
+    return this.campaignState;
   }
 
   /** current measured rendering FPS (0 when the loop is not running) */

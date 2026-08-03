@@ -5,6 +5,8 @@ import type { Disposable } from "@shared/Disposable";
 import { AtlasLoader } from "./AtlasLoader";
 import type { LoadableImage } from "./AtlasLoader";
 import { WorldAtlasPainter } from "./WorldAtlasPainter";
+import { projectSectorScene } from "./SceneProjector";
+import type { WorldScene } from "./WorldScene";
 
 /** public URL of the world atlas PNG, served from the static/ directory by Vite */
 export const WORLD_ATLAS_URL = "./world-atlas.png";
@@ -48,6 +50,7 @@ export function resizeBackingBuffer(
  * layered scene composition replaces the placeholder drawing in U01c.
  */
 export class CanvasRenderer implements Disposable {
+  private readonly app: Application;
   private readonly ctx: CanvasRenderingContext2D;
   private readonly atlasLoader: AtlasLoader;
   private readonly painter: WorldAtlasPainter;
@@ -59,6 +62,7 @@ export class CanvasRenderer implements Disposable {
   private dpr = 1;
 
   public constructor(app: Application, atlasLoader?: AtlasLoader) {
+    this.app = app;
     const ctx = app.getCanvasEl().getContext("2d");
     if (!ctx) throw new Error("could not acquire 2d rendering context");
     this.ctx = ctx;
@@ -127,14 +131,23 @@ export class CanvasRenderer implements Disposable {
       return;
     }
 
-    // placeholder drawing — U01c replaces this with layered scene composition
-    this.drawAtlasTest(atlas);
+    const state = this.app.getCampaignState();
+    const sectorIds = Object.keys(state.sectors);
+    if (sectorIds.length === 0) return;
+
+    const scene = projectSectorScene(sectorIds[0], state, this.app.getCatalog());
+    this.drawScene(atlas, scene);
   }
 
-  /** draws a temperate tile and waterwheel to confirm atlas loading and anchor drawing work */
-  private drawAtlasTest(atlas: LoadableImage): void {
-    this.painter.drawSprite(this.ctx, atlas, "biome-temperate", 0, 0);
-    this.painter.drawSprite(this.ctx, atlas, "waterwheel", 0, 0);
+  /** iterates each scene layer in canonical order and draws sprites via the atlas painter */
+  private drawScene(atlas: LoadableImage, scene: WorldScene): void {
+    const { ctx, painter } = this;
+    const cs = CELL_SIZE;
+    for (const layer of [scene.biomes, scene.groundOverlays, scene.entities, scene.facilities]) {
+      for (const cell of layer) {
+        painter.drawSprite(ctx, atlas, cell.spriteId, cell.col * cs, cell.row * cs);
+      }
+    }
   }
 }
 

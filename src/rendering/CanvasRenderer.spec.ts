@@ -116,6 +116,8 @@ function makeApp() {
     resume: vi.fn(),
     setSpeed: vi.fn(),
     dispose: vi.fn(),
+    getCampaignState: () => ({ sectors: {} }),
+    getCatalog: () => null,
   } as unknown as Application;
 
   return { app, clearRect, fillRect, drawImage, tickSubs };

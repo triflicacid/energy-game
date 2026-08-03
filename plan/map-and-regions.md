@@ -219,6 +219,45 @@ Sites retain history:
 
 This rewards long-term planning without requiring one facility to transform implausibly into another.
 
+## Camera and navigation
+
+The game has two distinct view modes that share one canvas. Switching between them is a presentation concern; it does not mutate simulation state.
+
+### Sector detail view
+
+The default view when the game starts. Shows the interior tile grid of one sector (the `diameter × diameter` cell area) at a scale where individual buildings are visible.
+
+- The camera is bounded to the sector's tile grid: the player cannot scroll past its edges.
+- Pan by click-and-drag (or touch equivalent).
+- Zoom by scroll wheel.
+- Minimum zoom shows the entire sector grid without clipping.
+- Maximum zoom is a reasonable upper limit (exact value decided during U01e implementation).
+
+### Campaign map view
+
+Shows the connected sector graph at a scale where each sector is a single hex node.
+
+- Hex nodes are arranged at their `(gridQ, gridR)` axial grid positions.
+- Edges between nodes represent possible or built interconnections.
+- Pan and zoom operate over the hex graph.
+- Clicking a sector hex enters that sector's detail view.
+
+### Switching between views
+
+| Action | Effect |
+|---|---|
+| Press `M` | Toggle between sector detail view and campaign map view |
+| Shift+scroll outward far enough | Transition from sector detail view to campaign map view |
+| Click a hex node in campaign map | Enter that sector's detail view |
+
+The transition threshold for shift+scroll should be reached before the sector tiles become too small to distinguish; the exact zoom level is a tunable constant, not part of the simulation model.
+
+### Design notes
+
+- The two views are rendering modes, not separate DOM pages. The canvas and its event handlers switch behavior based on the current view state.
+- Campaign map hex visual appearance (biome colour, access-state fog, town/resource badges) is not yet specified; it belongs to the sector grid implementation phase (Phase 5).
+- The `M` key shortcut must not fire while keyboard focus is inside a text input or dialog.
+
 ## Initial target
 
 For the first playable campaign:
