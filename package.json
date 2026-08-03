@@ -7,9 +7,10 @@
   "scripts": {
     "lint": "eslint .",
     "clean": "rm -r -fo dist",
+    "clean:web": "rm -r -fo dist/web",
     "dev:client": "vite",
     "copy:assets": "cp static dist/web -r -Force",
-    "build:client": "tsc -p tsconfig.json && vite build && pnpm run copy:assets",
+    "build:client": "pnpm run clean:web && tsc -p tsconfig.json && vite build && pnpm run copy:assets",
     "open:client": "vite preview --open",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
