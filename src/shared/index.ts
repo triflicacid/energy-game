@@ -56,3 +56,5 @@ export {
   makeContractId,
   makeConstructionJobId,
 } from "./IdCounter";
+export type { RngState } from "./Rng";
+export { Rng, seedFromString } from "./Rng";
