@@ -6,6 +6,22 @@ Build the smallest vertical slice that proves the interaction among mechanical p
 
 For bounded, dependency-ordered tasks suitable for delegation, use [Delegation-ready implementation tasks](implementation-tasks.md). This roadmap defines milestones; the task plan defines exact work units and acceptance criteria.
 
+## Immediate rendering roadmap
+
+The sprite-atlas pipeline, world art, reservoir-mask selector, application canvas, and renderer lifecycle shell exist. The next rendering work should replace the solid-color `CanvasRenderer` placeholder in small, testable steps rather than implementing camera, placement, every entity type, and all visual effects at once.
+
+Implement rendering in this order:
+
+1. **U01a — Atlas drawing foundation:** load/decode the generated atlas, draw typed source rectangles with anchors, use nearest-neighbor scaling, and handle device-pixel-ratio resizing.
+2. **U01b — Read-only world scene:** project campaign state plus content definitions into deterministic logical cells and draw commands. Preserve semantic cell/site coordinates or template identity where needed, but never store canvas pixels, atlas rectangles, or image objects in simulation/save state.
+3. **U01c — Layered centre-sector composition:** draw opaque biome cells, then reservoir/ground overlays, physical resources and towns, facilities, and finally transient effects. Do not render generic or waterwheel site placeholders.
+4. **U01d — Connected and growth variants:** select all 16 reservoir masks from cardinal neighbors in the same visual group, and select town tiers with the generic town fallback. Deterministic rendering fixtures may exercise variants before full water/town-growth simulation exists.
+5. **U01e — Interaction rendering:** add camera transforms, resize-safe hit testing, selection, placement previews, and faint construction-suitability outlines supplied by placement logic.
+
+The first useful rendering checkpoint is U01c: the centre sector visibly demonstrates the biome-plus-transparent-overlay model with forest, town, and built-facility examples. U01d and U01e then add topology, growth, and interaction without rewriting the base renderer.
+
+Rendering work must not infer occupancy, placement validity, reservoir capacity, or town growth from pixels. It may consume deterministic test scenes until the corresponding runtime systems expose read-only semantic state; test fixtures must not become hard-coded production content.
+
 ## ✅ Phase 0: foundations
 
 Deliver:

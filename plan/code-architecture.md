@@ -317,15 +317,21 @@ The visual map layout can be generated separately from gameplay content so prese
 
 The canvas renders the spatial game world:
 
+- Opaque biome backgrounds for visible cells
+- Transparent reservoir, resource, town, and facility overlays
 - Sector shapes and borders
-- Towns and sites
+- Towns and physical resources
 - Facilities and construction
 - Transmission connections
-- Selection and placement previews
+- Selection, placement previews, and faint construction-suitability outlines
 - Weather and seasonal effects
 - Grid-flow and resource overlays
 
 Rendering reads state but does not advance the simulation or modify it.
+
+The canonical back-to-front order is biome background, ground-level overlays such as reservoir water, persistent resources/entities, facilities, and transient interaction graphics. Object sprites must not repaint the full biome tile. The built waterwheel may retain its local river/bank foreground because that scenery is part of the facility composition.
+
+Site tags and placement opportunities remain semantic state. Generic and waterwheel sites have no persistent placeholder art: when construction mode is active, placement rules produce eligible cells or footprints and the renderer draws a faint outline over them. Standing forest remains visible because it is a physical resource, not merely a placement tag. See `plan/sprites-and-atlases.md` for the complete layer and atlas contract.
 
 Spatial selection and camera movement may live near rendering because they depend on screen/world coordinates. A selected object is then exposed to the application/UI layer by stable runtime ID.
 

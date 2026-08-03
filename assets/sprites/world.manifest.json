@@ -1,0 +1,284 @@
+{
+  "atlasId": "world",
+  "cellSize": 64,
+  "padding": 2,
+  "maxWidth": 2048,
+  "maxHeight": 2048,
+  "outputPng": "src/rendering/generated/world-atlas.png",
+  "outputTs": "src/rendering/generated/world-atlas.ts",
+  "sprites": [
+    {
+      "id": "biome-temperate",
+      "src": "world/biome-temperate.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 0
+    },
+    {
+      "id": "biome-cold",
+      "src": "world/biome-cold.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 0
+    },
+    {
+      "id": "biome-desert",
+      "src": "world/biome-desert.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 0
+    },
+    {
+      "id": "biome-wetland",
+      "src": "world/biome-wetland.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 0
+    },
+    {
+      "id": "biome-mountain",
+      "src": "world/biome-mountain.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 0
+    },
+    {
+      "id": "biome-volcanic",
+      "src": "world/biome-volcanic.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 0
+    },
+    {
+      "id": "biome-coastal",
+      "src": "world/biome-coastal.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 0
+    },
+    {
+      "id": "biome-offshore",
+      "src": "world/biome-offshore.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 0
+    },
+    {
+      "id": "reservoir-water-00",
+      "src": "world/reservoir-water-00.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-01",
+      "src": "world/reservoir-water-01.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-02",
+      "src": "world/reservoir-water-02.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-03",
+      "src": "world/reservoir-water-03.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-04",
+      "src": "world/reservoir-water-04.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-05",
+      "src": "world/reservoir-water-05.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-06",
+      "src": "world/reservoir-water-06.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-07",
+      "src": "world/reservoir-water-07.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-08",
+      "src": "world/reservoir-water-08.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-09",
+      "src": "world/reservoir-water-09.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-0a",
+      "src": "world/reservoir-water-0a.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-0b",
+      "src": "world/reservoir-water-0b.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-0c",
+      "src": "world/reservoir-water-0c.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-0d",
+      "src": "world/reservoir-water-0d.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-0e",
+      "src": "world/reservoir-water-0e.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "reservoir-water-0f",
+      "src": "world/reservoir-water-0f.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 1
+    },
+    {
+      "id": "forest-site",
+      "src": "world/forest-site.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 2
+    },
+    {
+      "id": "town",
+      "src": "world/town.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 2
+    },
+    {
+      "id": "town-tier-1",
+      "src": "world/town-tier-1-hamlet.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 2
+    },
+    {
+      "id": "town-tier-2",
+      "src": "world/town-tier-2-village.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 2
+    },
+    {
+      "id": "town-tier-3",
+      "src": "world/town-tier-3-stone.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 2
+    },
+    {
+      "id": "town-tier-4",
+      "src": "world/town-tier-4-industrial.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 2
+    },
+    {
+      "id": "town-tier-5",
+      "src": "world/town-tier-5-modern.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 2
+    },
+    {
+      "id": "town-tier-6",
+      "src": "world/town-tier-6-metropolis.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 2
+    },
+    {
+      "id": "waterwheel",
+      "src": "buildings/waterwheel.svg",
+      "pixelWidth": 64, "pixelHeight": 80,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 16,
+      "atlasRow": 3
+    },
+    {
+      "id": "mechanical-workshop",
+      "src": "buildings/mechanical-workshop.svg",
+      "pixelWidth": 128, "pixelHeight": 64,
+      "footprintW": 2, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 3
+    }
+  ]
+}
+

@@ -127,7 +127,9 @@ Per interval:
 
 `next storage = current storage + inflow − withdrawals − evaporation − required releases`
 
-A reservoir is a regional facility that increases controllable storage. No lake shape or pipe routing is required.
+A reservoir is a regional facility that increases controllable storage. No simulated lake shape or pipe routing is required.
+
+The map may present a reservoir with transparent connected water tiles over the normal biome background. The renderer selects one of 16 north/east/south/west variants for each visual cell and joins only cardinal neighbors in the same reservoir visual group. This presentation shape is derived from state for readability; it never determines capacity, inflow, evaporation, facility footprint, water balance, or simulation connectivity.
 
 ## Water users
 

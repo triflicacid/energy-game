@@ -3,11 +3,19 @@
 import type { Application } from "@application";
 import type { Disposable } from "@shared/Disposable";
 
+export {
+  RESERVOIR_CONNECTION,
+  reservoirConnectionMask,
+  reservoirSpriteId,
+  type ReservoirNeighbourLookup,
+  type ReservoirSpriteId,
+} from "./ReservoirAutotile";
+
 /**
  * minimal canvas renderer shell.
  *
  * subscribes to tick:after so the canvas is redrawn whenever the simulation
- * advances.  full sector/sprite rendering will be implemented in U01.
+ * advances. Atlas drawing begins in U01a; layered sector composition follows in U01c.
  */
 export class CanvasRenderer implements Disposable {
   private readonly ctx: CanvasRenderingContext2D;
@@ -39,7 +47,7 @@ export class CanvasRenderer implements Disposable {
     canvas.height = canvas.clientHeight;
   }
 
-  /** placeholder fill; replaced by real tile/sprite rendering in U01 */
+  /** placeholder fill; replaced by atlas drawing and layered composition in U01a–U01c */
   private render(): void {
     const { canvas } = this.ctx;
     this.ctx.clearRect(0, 0, canvas.width, canvas.height);

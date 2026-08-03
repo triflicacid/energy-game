@@ -8,15 +8,13 @@ It supplements [the implementation roadmap](implementation-roadmap.md). The road
 
 ## Current baseline
 
-EnergyGame currently contains a minimal TypeScript/Vite/Electron scaffold:
+EnergyGame now contains tested foundation, content, simulation, application-shell, sprite-atlas, and initial UI modules. For rendering specifically:
 
-- `src/index.ts` is only a placeholder.
-- No game simulation, UI, content catalogs, or tests exist yet.
-- No `lib/` workspace packages are configured.
-- The Electron bootstrap and Vite/Vitest/TypeScript/ESLint configuration are inherited in simplified form from `fox-game`.
-- The project should be treated as a greenfield game implementation, not as a fox-game migration.
-
-Before delegating feature tasks, verify the baseline commands and repair tooling so every later agent has a reliable definition of done.
+- `A00` source sprites, deterministic atlas generation/checking, typed descriptors, explicit category rows, and reservoir-mask helpers exist.
+- `U00` provides the application canvas, DOM overlay root, frame lifecycle, pause/speed controls, and renderer disposal boundary.
+- `CanvasRenderer` currently clears the canvas to a solid color and redraws after simulation ticks; it does not load the atlas or consume campaign state.
+- Centre-sector content contains biome and logical site coordinates, but runtime state does not currently preserve enough template/layout identity for a robust renderer projection.
+- Rendering must remain a presentation consumer. Do not solve missing scene data by putting canvas pixels, atlas rectangles, or image objects into campaign/save state.
 
 ## Non-negotiable decisions
 
@@ -105,9 +103,13 @@ S02 + S03 + M00
              └─ E00 iron/copper extraction and processing
 
 F00
- └─ A00 sprite-atlas pipeline          (no simulation dependency; can run now)
-     └─ U00 browser application shell
-         ├─ U01 one-sector canvas map (+ M00)
+ └─ ✅ A00 sprite-atlas pipeline
+     └─ ✅ U00 browser application shell
+         ├─ U01a atlas/canvas drawing foundation
+         │   └─ U01b read-only world scene (+ M00)
+         │       └─ U01c layered centre-sector composition
+         │           └─ U01d reservoir/town variants
+         │               └─ U01e camera and interaction rendering (+ U02)
          └─ U02 HTML status/build/research UI (+ S02 + S03 + V01)
 
 E00 + V02
@@ -457,7 +459,7 @@ Integrate a tested scenario:
 
 **Acceptance:** round trip preserves deterministic continuation; rendering caches and listeners are absent; bad saves fail safely.
 
-## U00 — Browser application shell
+## ✅ U00 — Browser application shell
 
 **Depends on:** A00, F00
 
@@ -472,7 +474,7 @@ Integrate a tested scenario:
 
 **Acceptance:** application starts, pauses, resumes, and disposes without duplicate subscriptions; HTML controls can coexist with canvas pointer handling.
 
-## A00 — Initial sprite-atlas pipeline
+## ✅ A00 — Initial sprite-atlas pipeline
 
 **Depends on:** F00
 
@@ -480,8 +482,9 @@ Integrate a tested scenario:
 
 **Deliverables:**
 
-- Individual named source sprites for the initial centre-sector slice.
+- Individual named source sprites for the initial centre-sector slice: opaque biome backgrounds; transparent forest, town-tier, reservoir, and facility overlays; and no generic/waterwheel site placeholders.
 - Deterministic script that validates and packs sources into a building/world atlas.
+- Explicit, validated atlas rows for biome backgrounds, reservoir autotiles, world/entity overlays, and structures.
 - Generated TypeScript descriptor containing semantic sprite IDs, source rectangles, anchors, and visual bounds.
 - Atlas padding and maximum-size checks.
 - Stale-output verification mode suitable for build/CI.
@@ -492,25 +495,89 @@ Integrate a tested scenario:
 **Acceptance:**
 
 - Same inputs produce byte/structurally identical placement and descriptors.
-- Duplicate IDs, missing sources, out-of-bounds rectangles, and stale generated output fail clearly.
+- Duplicate IDs, missing sources, incomplete/oversized explicit rows, out-of-bounds rectangles, and stale generated output fail clearly.
 - Gameplay footprint remains in facility content; simulation imports no atlas or sprite types.
 
-## U01 — One-sector canvas renderer
+## U01a — Atlas and canvas drawing foundation
 
-**Depends on:** U00, A00, M00
+**Depends on:** U00, A00
+
+**Read:** `plan/sprites-and-atlases.md`, rendering section of `plan/code-architecture.md`
+
+**Deliverables:**
+
+- Load and decode the generated world atlas once, with explicit ready/error state and an injectable image boundary for tests.
+- Draw a semantic sprite ID by resolving its generated source rectangle, destination size, and anchor; callers never supply atlas coordinates.
+- Disable image smoothing and preserve integer source rectangles and pixel-aligned destination coordinates at integer zoom levels.
+- Resize the canvas backing buffer for CSS size and device pixel ratio without changing logical world coordinates.
+- Redraw when the atlas becomes ready and when relevant presentation state or viewport size changes; do not depend solely on simulation ticks.
+- Draw a visible development fallback for missing sprite IDs or atlas-load failure.
+
+**Acceptance:** unit tests verify source/destination rectangles, anchors, DPR resize behavior, smoothing state, one-time loading, redraw invalidation, and failure handling; no simulation type imports DOM/image types.
+
+## U01b — Read-only world render scene
+
+**Depends on:** U01a, M00
+
+**Read:** `plan/map-and-regions.md`, rendering and generation sections of `plan/code-architecture.md`
+
+**Deliverables:**
+
+- Define a renderer-facing immutable scene/read-model containing logical cell positions, biome visual IDs, persistent resource/entity visuals, facilities, and optional transient overlays.
+- Build the centre-sector scene deterministically from read-only campaign state, indexed content definitions, and presentation layout data.
+- Preserve or expose stable site-template/layout identity at the generation/application boundary where needed; do not match runtime sites to templates by array position.
+- Place towns through a deterministic presentation layout because town simulation state intentionally has no street/building coordinates.
+- Keep canvas pixels, camera state, atlas rectangles, decoded images, and caches out of simulation and save data.
+- Emit a forest visual for standing forest, but no visual command for empty `general-site` or `waterwheel-site` suitability.
+
+**Acceptance:** equal semantic input produces deeply equal scene commands; shuffled collection iteration does not alter output; missing definitions/layout identity fail visibly in development; projection does not mutate campaign state or content.
+
+## U01c — Layered centre-sector composition
+
+**Depends on:** U01b
 
 **Read:** `plan/sprites-and-atlases.md`
 
 **Deliverables:**
 
-- Render the centre sector, sites, town, and facility markers.
-- Resolve semantic visual IDs through generated atlas metadata.
-- Align one-cell and multi-cell sprites using content footprints and generated anchors.
-- Camera/pan/zoom and spatial hit testing only as needed for this slice.
-- Renderer consumes read-only state and semantic IDs.
-- No simulation mutation inside rendering.
+- Replace the solid-color renderer with scene composition in canonical order: opaque biome backgrounds; reservoir/ground overlays; persistent resources and towns; facilities; transient interaction graphics.
+- Preserve the biome through transparent object sprites and render the waterwheel's local river/bank as part of that built facility visual.
+- Align one-cell, multi-cell, and overhanging sprites using logical cells, content footprints, and generated anchors.
+- Use deterministic layer, base-row/anchor-row, and stable-ID tie-breakers.
+- Render a facility only when an instance or explicit under-construction state exists; suitability tags alone never create building art.
 
-**Acceptance:** deterministic state produces stable visuals; coordinate/hit-test transformations have unit tests.
+**Acceptance:** a deterministic centre-sector fixture shows the temperate background, forest, town, one-cell waterwheel, and two-cell workshop in the intended order; draw-command tests verify ordering and anchors; transparent areas reveal the biome; no placeholder site art appears.
+
+## U01d — Reservoir and town visual variants
+
+**Depends on:** U01c
+
+**Read:** reservoir section of `plan/sprites-and-atlases.md`, visual tiers in `plan/towns-and-contracts.md`
+
+**Deliverables:**
+
+- Select `reservoir-water-00` through `reservoir-water-0f` from north/east/south/west neighbors in the same visual join group.
+- Ignore diagonal-only contact and never join distinct reservoirs merely because cells touch.
+- Select `town-tier-1` through `town-tier-6` from presentation growth state and use `town` when no tier can be resolved.
+- Use deterministic rendering fixtures until water extent and town growth are supplied by gameplay; do not add fake production simulation state to demonstrate art.
+
+**Acceptance:** all 16 reservoir masks render at correct positions and matching edges; distinct groups and diagonals remain disconnected; each town tier and fallback is covered; visual reservoir area does not determine capacity or connectivity.
+
+## U01e — Camera and interaction rendering
+
+**Depends on:** U01d, U02
+
+**Read:** construction-mode and anchoring sections of `plan/sprites-and-atlases.md`
+
+**Deliverables:**
+
+- Add world/screen transforms, bounded pan/zoom, resize handling, and spatial hit testing using one shared coordinate model.
+- Render selection and placement footprint previews independently from sprite opaque bounds.
+- Accept eligible cells/footprints from a typed application placement query and draw a faint construction-suitability outline only while construction mode is active.
+- Update highlights when facility choice, rotation, ownership, occupancy, research/biome access, or placement state changes.
+- Keep placement decisions out of the renderer; it presents eligibility but never calculates or mutates it.
+
+**Acceptance:** transform round trips and hit tests are unit tested across zoom/DPR values; highlights align to gameplay footprints, update with eligibility, and disappear on mode exit; invalid cells are not highlighted; rendering remains deterministic for equal scene and viewport state.
 
 ## U02 — Initial HTML UI
 
@@ -608,8 +675,9 @@ Integrate a tested scenario:
 - Abstract reservoir facility.
 - Waterwheel/hydro availability from flow/storage.
 - Priority behavior during shortage.
+- Presentation-facing reservoir extent/join-group state where needed for autotile selection; this state must not calculate or override capacity or water balance.
 
-**Acceptance:** water balance reconciles every tick; no generated lake/river terrain; drought and overflow cases are tested.
+**Acceptance:** water balance reconciles every tick; no generated lake/river terrain; visual reservoir shape does not determine storage or connectivity; drought and overflow cases are tested.
 
 ## R00 — Bills of materials and decommissioning
 

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+  <!-- highland sky -->
+  <rect width="16" height="16" fill="#202832"/>
+  <!-- taller right peak -->
+  <rect x="11" y="3" width="1" height="1" fill="#3d4240"/>
+  <rect x="10" y="4" width="3" height="1" fill="#3d4240"/>
+  <rect x="9" y="5" width="5" height="1" fill="#3d4240"/>
+  <rect x="8" y="6" width="7" height="6" fill="#3d4240"/>
+  <rect x="15" y="8" width="1" height="4" fill="#3d4240"/>
+  <!-- snow cap and shaded face -->
+  <rect x="11" y="3" width="1" height="2" fill="#9ba5a3"/>
+  <rect x="10" y="4" width="1" height="2" fill="#7e8988"/>
+  <rect x="12" y="5" width="2" height="1" fill="#59615f"/>
+  <rect x="13" y="6" width="2" height="4" fill="#343a39"/>
+  <!-- broader left peak -->
+  <rect x="4" y="5" width="1" height="1" fill="#343b3c"/>
+  <rect x="3" y="6" width="3" height="1" fill="#343b3c"/>
+  <rect x="2" y="7" width="5" height="1" fill="#343b3c"/>
+  <rect x="1" y="8" width="7" height="1" fill="#343b3c"/>
+  <rect x="0" y="9" width="9" height="3" fill="#343b3c"/>
+  <!-- snow cap and rock facets -->
+  <rect x="4" y="5" width="1" height="2" fill="#87918f"/>
+  <rect x="3" y="6" width="1" height="2" fill="#727c7b"/>
+  <rect x="5" y="7" width="2" height="1" fill="#4b5352"/>
+  <rect x="1" y="9" width="2" height="2" fill="#414846"/>
+  <!-- stony foreground -->
+  <rect x="0" y="12" width="16" height="4" fill="#303532"/>
+  <rect x="1" y="13" width="3" height="1" fill="#454b46"/>
+  <rect x="8" y="15" width="4" height="1" fill="#242927"/>
+</svg>
+
+

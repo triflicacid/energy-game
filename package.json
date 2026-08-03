@@ -5,6 +5,9 @@
   "main": "dist/electron/main.js",
   "type": "module",
   "scripts": {
+    "sprites:reservoir": "node --experimental-strip-types scripts/generate-reservoir-sprites.ts",
+    "atlas": "node --experimental-strip-types scripts/pack-atlas.ts",
+    "atlas:check": "node --experimental-strip-types scripts/pack-atlas.ts --check",
     "lint": "eslint .",
     "clean": "rm -r -fo dist -ErrorAction SilentlyContinue",
     "clean:web": "rm -r -fo dist/web -ErrorAction SilentlyContinue",
@@ -22,6 +25,7 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.1.1",
     "eslint": "^10.7.0",
+    "sharp": "^0.35.3",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.64.0",
     "vite": "^8.1.4",

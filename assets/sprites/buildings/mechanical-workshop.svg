@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 16" width="128" height="64" shape-rendering="crispEdges">
+  <!-- main building body -->
+  <rect x="1"  y="5"  width="30" height="8" fill="#3a3020"/>
+  <!-- roof (slight pitch) -->
+  <rect x="1"  y="3"  width="30" height="2" fill="#4a2e14"/>
+  <rect x="2"  y="2"  width="28" height="1" fill="#4a2e14"/>
+  <rect x="4"  y="1"  width="24" height="1" fill="#5a3618"/>
+  <!-- chimney left -->
+  <rect x="4"  y="0"  width="3" height="2" fill="#302828"/>
+  <rect x="4"  y="0"  width="3" height="1" fill="#484040"/>
+  <!-- chimney right -->
+  <rect x="25" y="0"  width="3" height="2" fill="#302828"/>
+  <rect x="25" y="0"  width="3" height="1" fill="#484040"/>
+  <!-- large door (center) -->
+  <rect x="13" y="7"  width="6" height="6" fill="#1a1208"/>
+  <rect x="14" y="6"  width="4" height="1" fill="#1a1208"/>
+  <!-- windows -->
+  <rect x="2"  y="6"  width="3" height="3" fill="#506050"/>
+  <rect x="7"  y="6"  width="3" height="3" fill="#506050"/>
+  <rect x="22" y="6"  width="3" height="3" fill="#506050"/>
+  <rect x="27" y="6"  width="3" height="3" fill="#506050"/>
+  <!-- window pane dividers -->
+  <rect x="3"  y="6"  width="1" height="3" fill="#2a3028"/>
+  <rect x="2"  y="7"  width="3" height="1" fill="#2a3028"/>
+  <rect x="8"  y="6"  width="1" height="3" fill="#2a3028"/>
+  <rect x="7"  y="7"  width="3" height="1" fill="#2a3028"/>
+  <rect x="23" y="6"  width="1" height="3" fill="#2a3028"/>
+  <rect x="22" y="7"  width="3" height="1" fill="#2a3028"/>
+  <rect x="28" y="6"  width="1" height="3" fill="#2a3028"/>
+  <rect x="27" y="7"  width="3" height="1" fill="#2a3028"/>
+  <!-- large gear visible through right window area -->
+  <rect x="18" y="5"  width="4" height="1" fill="#706030"/>
+  <rect x="17" y="6"  width="6" height="1" fill="#706030"/>
+  <rect x="17" y="7"  width="1" height="3" fill="#706030"/>
+  <rect x="22" y="7"  width="1" height="3" fill="#706030"/>
+  <rect x="17" y="10" width="6" height="1" fill="#706030"/>
+  <rect x="18" y="11" width="4" height="1" fill="#706030"/>
+  <rect x="19" y="6"  width="2" height="5" fill="#706030"/>
+  <rect x="17" y="8"  width="6" height="1" fill="#706030"/>
+  <rect x="19" y="8"  width="2" height="2" fill="#908040"/>
+</svg>
+

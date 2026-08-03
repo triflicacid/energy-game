@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="64" height="80" shape-rendering="crispEdges">
+  <!-- river / water (rows 14-19); the biome backdrop remains visible above -->
+  <rect x="0" y="14" width="16" height="6" fill="#143858"/>
+  <rect x="0" y="16" width="16" height="1" fill="#1a5070"/>
+  <rect x="1" y="18" width="14" height="1" fill="#1a5070"/>
+  <!-- left riverbank under house -->
+  <rect x="0" y="13" width="7" height="7" fill="#2a2010"/>
+  <!-- mill house walls (behind the wheel) -->
+  <rect x="0" y="7" width="8" height="7" fill="#3a2a18"/>
+  <!-- house roof -->
+  <rect x="0" y="6" width="8" height="1" fill="#4a3020"/>
+  <rect x="1" y="5" width="6" height="1" fill="#4a3020"/>
+  <rect x="2" y="4" width="4" height="1" fill="#5a3818"/>
+  <rect x="3" y="3" width="2" height="1" fill="#6a4020"/>
+  <!-- chimney -->
+  <rect x="5" y="1" width="2" height="3" fill="#282020"/>
+  <rect x="5" y="1" width="2" height="1" fill="#3a3030"/>
+  <!-- house door -->
+  <rect x="1" y="11" width="2" height="3" fill="#1a1008"/>
+  <!-- house window -->
+  <rect x="4" y="8" width="3" height="3" fill="#506050"/>
+  <rect x="5" y="8" width="1" height="3" fill="#2a3028"/>
+  <rect x="4" y="9" width="3" height="1" fill="#2a3028"/>
+  <!-- axle stub from house wall to wheel hub -->
+  <rect x="7" y="8" width="3" height="2" fill="#7a5828"/>
+  <!-- wheel outer ring (centre col 10, row 8; radius 6) -->
+  <rect x="7"  y="2"  width="6" height="1" fill="#6a4a20"/>
+  <rect x="6"  y="3"  width="8" height="1" fill="#6a4a20"/>
+  <rect x="5"  y="4"  width="2" height="1" fill="#6a4a20"/>
+  <rect x="13" y="4"  width="2" height="1" fill="#6a4a20"/>
+  <rect x="4"  y="5"  width="1" height="8" fill="#6a4a20"/>
+  <rect x="15" y="5"  width="1" height="8" fill="#6a4a20"/>
+  <rect x="5"  y="13" width="2" height="1" fill="#6a4a20"/>
+  <rect x="13" y="13" width="2" height="1" fill="#6a4a20"/>
+  <rect x="6"  y="14" width="8" height="1" fill="#6a4a20"/>
+  <rect x="7"  y="15" width="6" height="1" fill="#6a4a20"/>
+  <!-- spokes -->
+  <rect x="9"  y="3"  width="2" height="12" fill="#7a5828"/>
+  <rect x="5"  y="8"  width="10" height="2" fill="#7a5828"/>
+  <rect x="5"  y="5"  width="2" height="3"  fill="#7a5828"/>
+  <rect x="13" y="5"  width="2" height="3"  fill="#7a5828"/>
+  <rect x="5"  y="10" width="2" height="3"  fill="#7a5828"/>
+  <rect x="13" y="10" width="2" height="3"  fill="#7a5828"/>
+  <!-- hub -->
+  <rect x="9"  y="7"  width="4" height="4"  fill="#907038"/>
+  <rect x="10" y="8"  width="2" height="2"  fill="#b09048"/>
+  <!-- paddles (at cardinal points) -->
+  <rect x="9"  y="2"  width="2" height="1"  fill="#a08040"/>
+  <rect x="9"  y="15" width="2" height="1"  fill="#a08040"/>
+  <rect x="3"  y="8"  width="2" height="2"  fill="#a08040"/>
+  <rect x="15" y="8"  width="1" height="2"  fill="#a08040"/>
+</svg>
+

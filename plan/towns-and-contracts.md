@@ -103,6 +103,19 @@ The player influences growth only through energy-related interventions:
 - Fund efficiency, electrification, local storage, or demand response
 - Approve a major industrial customer
 
+### Visual growth tiers
+
+Town markers visibly develop as population and demand grow. These are presentation tiers, not separately placed or simulated buildings:
+
+1. **Timber hamlet:** a few low wooden huts.
+2. **Wooden village:** larger and more numerous timber buildings.
+3. **Stone town:** dense stone cottages and sturdier roofs.
+4. **Brick/industrial town:** brick blocks, workshops, and chimneys.
+5. **Modern city:** concrete and glass mid-rise buildings.
+6. **Skyscraper metropolis:** a dense high-rise skyline.
+
+The renderer selects the corresponding `town-tier-1` through `town-tier-6` visual from town growth state. Each tier is a transparent entity overlay drawn over the sector's normal biome background, not a replacement terrain tile. Simulation and save data must not contain atlas rectangles. The generic `town` visual remains the fallback when a tier cannot be resolved.
+
 ## Founding towns
 
 The player may found a new town at a valid settlement site. This is a strategic energy-development action, not a city-building mode.

@@ -56,6 +56,7 @@ At each simulation interval:
 - Major industrial loads may be explicit; ordinary commerce and industry remain aggregated.
 - Materials initially use a company-wide inventory. Inter-sector freight may later add automatic cost and delay, but the player does not route trucks or trains.
 - Reservoirs and hydro opportunities are sector sites and water balances, not generated lakes or rivers.
+- World art is layered: an opaque biome tile forms the normal background, while reservoirs, forests, towns, and facilities are transparent overlays. Construction opportunities are semantic data shown as faint outlines only while construction mode is active, not persistent placeholder sprites.
 - Minor hand tools and incidental early building materials are part of the starting abstraction.
 - Imports provide an expensive safety valve so a campaign cannot become permanently deadlocked.
 

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+  <!-- tier 6: skyscraper metropolis -->
+  <rect x="0" y="6" width="4" height="6" fill="#3f4852"/>
+  <rect x="1" y="7" width="1" height="1" fill="#88a2a4"/>
+  <rect x="2" y="9" width="1" height="1" fill="#c1a768"/>
+  <rect x="4" y="2" width="5" height="10" fill="#52616a"/>
+  <rect x="5" y="0" width="3" height="2" fill="#52616a"/>
+  <rect x="6" y="0" width="1" height="1" fill="#8ba0a2"/>
+  <rect x="5" y="3" width="1" height="1" fill="#9eb6b5"/>
+  <rect x="7" y="3" width="1" height="1" fill="#c5aa66"/>
+  <rect x="5" y="5" width="1" height="1" fill="#76969c"/>
+  <rect x="7" y="5" width="1" height="1" fill="#9eb6b5"/>
+  <rect x="5" y="7" width="1" height="1" fill="#c5aa66"/>
+  <rect x="7" y="7" width="1" height="1" fill="#76969c"/>
+  <rect x="5" y="9" width="1" height="1" fill="#9eb6b5"/>
+  <rect x="7" y="9" width="1" height="1" fill="#c5aa66"/>
+  <rect x="9" y="4" width="4" height="8" fill="#46545e"/>
+  <rect x="10" y="2" width="2" height="2" fill="#46545e"/>
+  <rect x="10" y="5" width="2" height="1" fill="#8aa5a8"/>
+  <rect x="10" y="7" width="1" height="1" fill="#bea665"/>
+  <rect x="12" y="9" width="1" height="1" fill="#8aa5a8"/>
+  <rect x="13" y="7" width="3" height="5" fill="#37434d"/>
+  <rect x="14" y="8" width="1" height="1" fill="#8ca3a4"/>
+  <rect x="14" y="10" width="1" height="1" fill="#b8a161"/>
+</svg>
+

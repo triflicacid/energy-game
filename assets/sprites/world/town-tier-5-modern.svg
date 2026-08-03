@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+  <!-- tier 5: modern mid-rise city -->
+  <rect x="0" y="6" width="5" height="6" fill="#4e5355"/>
+  <rect x="1" y="7" width="1" height="1" fill="#9aa88e"/>
+  <rect x="3" y="7" width="1" height="1" fill="#7d9187"/>
+  <rect x="1" y="9" width="1" height="1" fill="#7d9187"/>
+  <rect x="3" y="9" width="1" height="1" fill="#a49b72"/>
+  <rect x="5" y="3" width="6" height="9" fill="#60666a"/>
+  <rect x="6" y="4" width="1" height="1" fill="#a9b59b"/>
+  <rect x="8" y="4" width="2" height="1" fill="#718d91"/>
+  <rect x="6" y="6" width="2" height="1" fill="#718d91"/>
+  <rect x="9" y="6" width="1" height="1" fill="#b0a374"/>
+  <rect x="6" y="8" width="1" height="1" fill="#a9b59b"/>
+  <rect x="8" y="8" width="2" height="1" fill="#718d91"/>
+  <rect x="7" y="10" width="2" height="2" fill="#303438"/>
+  <rect x="12" y="5" width="4" height="7" fill="#454c52"/>
+  <rect x="13" y="6" width="2" height="1" fill="#82989a"/>
+  <rect x="13" y="8" width="1" height="1" fill="#aaa06f"/>
+  <rect x="15" y="10" width="1" height="1" fill="#82989a"/>
+</svg>
+

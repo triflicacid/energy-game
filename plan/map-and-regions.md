@@ -73,7 +73,9 @@ Define abstract hydrological opportunities:
 - Large reservoir
 - Pumped-storage site
 
-The player builds on a named site; no river or lake geometry is simulated.
+The player builds on a named semantic site; no river or lake geometry is simulated. A site or tag such as `waterwheel-site` constrains placement but is not itself a persistent map sprite. The completed waterwheel is rendered only when the facility exists.
+
+Reservoir facilities may use connected water autotiles to communicate their extent visually. Those tiles are presentation overlays over the biome, not generated terrain: their shape and cell count do not define storage capacity, water balance, facility footprint, or simulation connectivity.
 
 ### Wind and solar sites
 
@@ -94,6 +96,8 @@ Support:
 Contain temperature, depth, flow, and depletion/recovery characteristics.
 
 ## Placement principles
+
+Construction mode visualizes placement rules directly. After a facility is selected, valid cells or footprints receive a faint transient outline derived from site tags, ownership, research/biome access, occupancy, and the facility's other placement requirements. General and water-specific opportunities do not use placeholder building sprites. Physical resources such as standing forest remain visible outside construction mode because they exist in the world independently of a proposed build.
 
 Location should matter through energy-relevant constraints:
 
