@@ -13,6 +13,7 @@ export default defineConfig({
   rules: {
     '@typescript-eslint/no-inferrable-types': 'error',
     '@typescript-eslint/explicit-member-accessibility': ['error', { accessibility: 'explicit' }],
+    '@typescript-eslint/consistent-type-definitions': 'off',
   },
 });
 

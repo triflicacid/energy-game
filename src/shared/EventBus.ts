@@ -14,10 +14,10 @@ const defaultErrorHandler: ListenerErrorHandler = (error, eventName) => {
   console.error(`listener error on "${eventName}":`, error);
 };
 
-interface QueuedEvent {
+type QueuedEvent = {
   name: string;
   payload: unknown;
-}
+};
 
 /** type-safe event bus; events published during delivery are queued and delivered after the current batch */
 export class EventBus<TMap extends object> {

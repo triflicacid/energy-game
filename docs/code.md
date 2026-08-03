@@ -93,3 +93,34 @@ src/
 
 do not bundle unrelated classes into a single file. shared pure utilities can live in a dedicated `util/` module.
 
+## type vs interface
+
+use `type` for plain data shapes — serializable state, event maps, content definitions, and any object shape that is not a contract for a class to implement.
+
+```ts
+// good — closed data shape, no implementation contract needed
+type InventoryState = {
+  readonly quantities: Readonly<Record<string, number>>;
+};
+
+// good — event map is just a lookup table of payload shapes
+type InventoryEventMap = {
+  "inventory:added": Readonly<{ resourceId: string; qty: number }>;
+};
+```
+
+use `interface` only when a class will `implement` it — i.e. it is a genuine behavioural contract.
+
+```ts
+// good — classes implement this contract
+interface JsonSerializable<TState> {
+  getState(): TState;
+  restore(state: TState): void;
+}
+
+class Inventory implements JsonSerializable<InventoryState> { ... }
+```
+
+the `@typescript-eslint/consistent-type-definitions` rule is disabled so the choice is made case-by-case rather than enforced uniformly.
+
+
