@@ -81,20 +81,20 @@ Follow-up issues: <none or concise list>
 ## Dependency overview
 
 ```text
-B00 baseline verification
- └─ B01 tooling reliability
-     └─ F00 source boundaries
-         ├─ F01 event bus
-         ├─ F02 units and IDs
-         ├─ F03 deterministic random
-         └─ C00 content structural validation
-             └─ C01 content catalog and semantic validation
+✅ B00 baseline verification
+ └─ ✅ B01 tooling reliability
+     └─ ✅ F00 source boundaries
+         ├─ ✅ F01 event bus
+         ├─ ✅ F02 units and IDs
+         ├─ ✅ F03 deterministic random
+         └─ ✅ C00 content structural validation
+             └─ ✅ C01 content catalog and semantic validation
 
 F01 + F02 + F03 + C01
- └─ S00 fixed simulation clock
-     └─ S01 campaign state and event history
-         ├─ S02 inventory and recipe execution
-         ├─ S03 research progression
+ └─ ✅ S00 fixed simulation clock
+     └─ ✅ S01 campaign state and event history
+         ├─ ✅ S02 inventory and recipe execution
+         ├─ ✅ S03 research progression
          └─ M00 hand-authored centre sector
 
 S02 + S03 + M00
@@ -135,7 +135,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 
 # Phase B: stabilize the project baseline
 
-## B00 — Verify and record baseline
+## ✅ B00 — Verify and record baseline
 
 **Depends on:** nothing
 
@@ -153,7 +153,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 - Tool versions and all command outcomes are documented.
 - Every baseline failure has a reproducible command and a follow-up task.
 
-## B01 — Make tooling reliable
+## ✅ B01 — Make tooling reliable
 
 **Depends on:** B00
 
@@ -174,7 +174,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 
 # Phase F: foundational code boundaries
 
-## F00 — Establish source boundaries
+## ✅ F00 — Establish source boundaries
 
 **Depends on:** B01
 
@@ -193,7 +193,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 - No circular imports are introduced.
 - Lint, tests, and client build pass.
 
-## F01 — Implement the central type-safe event bus
+## ✅ F01 — Implement the central type-safe event bus
 
 **Depends on:** F00
 
@@ -227,7 +227,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 - Runtime string event names cannot detach payload types from the event map.
 - Tests define delivery semantics unambiguously.
 
-## F02 — Define canonical units and runtime IDs
+## ✅ F02 — Define canonical units and runtime IDs
 
 **Depends on:** F00
 
@@ -242,7 +242,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 - Unit conversion and ID uniqueness tests pass.
 - Simulation types do not contain display abbreviations such as `kW` strings.
 
-## F03 — Deterministic random source
+## ✅ F03 — Deterministic random source
 
 **Depends on:** F00
 
@@ -256,7 +256,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 
 # Phase C: data-driven content
 
-## C00 — Structural content validation
+## ✅ C00 — Structural content validation
 
 **Depends on:** F00
 
@@ -277,7 +277,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 - Missing fields, invalid primitive values, and malformed arrays produce precise errors.
 - Raw JSON is not exposed directly to simulation code.
 
-## C01 — Indexed catalog and semantic validation
+## ✅ C01 — Indexed catalog and semantic validation
 
 **Depends on:** C00, F02
 
@@ -298,7 +298,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 
 # Phase S: headless simulation foundation
 
-## S00 — Fixed simulation clock
+## ✅ S00 — Fixed simulation clock
 
 **Depends on:** F01, F02
 
@@ -316,7 +316,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 - Pause advances no game state.
 - Invalid negative or nonfinite advancement is rejected.
 
-## S01 — Serializable campaign state and event history
+## ✅ S01 — Serializable campaign state and event history
 
 **Depends on:** S00, F02, F03, C01
 
@@ -333,7 +333,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 - Content definitions remain external and are referenced by ID.
 - History does not grow without bound.
 
-## S02 — Inventory and recipe execution
+## ✅ S02 — Inventory and recipe execution
 
 **Depends on:** S01
 
@@ -347,19 +347,23 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 
 **Tests:** insufficient inputs, exact inputs, surplus inputs, outputs/by-products, nonnegative invariants, repeated execution, conservation expectations.
 
-## S03 — Research progression
+## ✅ S03 — Research progression
 
 **Depends on:** S01, C01
 
 **Deliverables:**
 
-- Track completed, available, blocked, and active research.
+- Track completed, available, blocked, and in-progress research.
 - Enforce prerequisites and costs from content.
-- Advance active research through simulation time/input.
+- Accept research points directed at a named node each tick; multiple nodes may progress simultaneously.
 - Publish completion/unlock events.
 - Do not hard-code research IDs in progression logic.
 
-**Tests:** prerequisites, unavailable start, progress, completion, duplicate completion prevention, unlock recalculation.
+**Assignment model:**
+
+Each research facility independently assigns its output to a target node. The `ResearchManager` receives `addPoints(nodeId, points)` calls and does not impose a single global active node. Assignment state (which facility targets which node) lives in facility state, not in `ResearchManager`. A UI global-override shortcut will set all facilities to the same node at once; this is a presentation-layer action handled in the UI step (see U02).
+
+**Tests:** prerequisites, unavailable target, progress, completion, duplicate completion prevention, unlock recalculation, simultaneous multi-node progress, serialization round-trip.
 
 # Phase M/V: first headless vertical slice
 
@@ -521,6 +525,8 @@ Integrate a tested scenario:
 - Selected sector/site/facility details.
 - Minimal build controls.
 - Minimal research list or graph using HTML controls; SVG may draw dependency edges.
+- Per-facility research assignment control (select which node a workshop targets).
+- Global research assignment shortcut: reassign all facilities to the same node in one action; implemented as a UI iteration over facility assignments, not a change to `ResearchManager`.
 - Keyboard focus and modal/panel behavior.
 
 **Acceptance:** normal buttons are keyboard accessible; typing/focus does not trigger map shortcuts; UI updates from events/read-only state without polling every animation frame.

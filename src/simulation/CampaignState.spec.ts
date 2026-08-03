@@ -54,11 +54,10 @@ describe("createCampaignState", () => {
     expect(Object.keys(state.inventory.quantities)).toHaveLength(0);
   });
 
-  it("initializes research with no completed nodes", () => {
+  it("initializes research with no completed nodes and no in-progress nodes", () => {
     const { research } = createCampaignState({ seed: 1 });
     expect(research.completed).toHaveLength(0);
-    expect(research.activeNodeId).toBeNull();
-    expect(research.accumulatedCost).toBe(0);
+    expect(Object.keys(research.progress)).toHaveLength(0);
   });
 
   it("initializes history as empty", () => {

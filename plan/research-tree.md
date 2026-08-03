@@ -15,6 +15,16 @@ A node can require:
 
 Research should unlock capability, not grant a finished plant for free.
 
+## Assignment model
+
+Each research facility (workshop, laboratory) is independently assigned to a target node. Multiple facilities may target the same node or different nodes simultaneously. The `ResearchManager` accepts points directed at a named node each tick; it does not impose a single global active node.
+
+Assignments are part of facility state, not research state. The research manager only tracks which nodes are completed and how many points each in-progress node has accumulated.
+
+### Global override
+
+A UI control will allow the player to reassign all facilities to the same node in one action. This is a presentation-layer convenience and does not require any change to the simulation model — the UI iterates over facilities and updates each assignment individually before the next tick.
+
 ## Gaining research
 
 ### Continuous experimentation

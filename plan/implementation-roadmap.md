@@ -6,7 +6,7 @@ Build the smallest vertical slice that proves the interaction among mechanical p
 
 For bounded, dependency-ordered tasks suitable for delegation, use [Delegation-ready implementation tasks](implementation-tasks.md). This roadmap defines milestones; the task plan defines exact work units and acceptance criteria.
 
-## Phase 0: foundations
+## ✅ Phase 0: foundations
 
 Deliver:
 
