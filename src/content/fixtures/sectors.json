@@ -1,0 +1,15 @@
+[
+  {
+    "id": "centre",
+    "name": "Ashford Valley",
+    "biome": "temperate",
+    "distanceFromCentre": 0,
+    "siteTemplates": [
+      { "templateId": "centre-forest-1", "tags": ["forest"] },
+      { "templateId": "centre-waterwheel-1", "tags": ["waterwheel-site"] }
+    ],
+    "hasTown": true,
+    "initialAccessState": "buildable"
+  }
+]
+

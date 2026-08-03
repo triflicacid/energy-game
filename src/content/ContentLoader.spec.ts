@@ -89,13 +89,14 @@ describe("loadBundledContent", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("bundle contains all five catalogs", () => {
+  it("bundle contains all six catalogs", () => {
     const result = loadBundledContent();
     if (!result.ok) throw new Error(JSON.stringify(result.issues));
     expect(result.bundle.resources.length).toBeGreaterThan(0);
     expect(result.bundle.recipes.length).toBeGreaterThan(0);
     expect(result.bundle.facilities.length).toBeGreaterThan(0);
     expect(result.bundle.researchNodes.length).toBeGreaterThan(0);
+    expect(result.bundle.sectors.length).toBeGreaterThan(0);
   });
 
   it("fixture resources include timber and wood-waste", () => {
@@ -130,6 +131,21 @@ describe("loadBundledContent", () => {
     expect(ids).toContain("waterwheel-construction");
     expect(ids).toContain("mechanical-workshop-construction");
     expect(ids).toContain("basic-prospecting");
+  });
+
+  it("fixture sectors include the centre sector", () => {
+    const result = loadBundledContent();
+    if (!result.ok) throw new Error(JSON.stringify(result.issues));
+    const ids = result.bundle.sectors.map((s) => s.id);
+    expect(ids).toContain("centre");
+  });
+
+  it("centre sector starts as buildable with distance zero", () => {
+    const result = loadBundledContent();
+    if (!result.ok) throw new Error(JSON.stringify(result.issues));
+    const centre = result.bundle.sectors.find((s) => s.id === "centre");
+    expect(centre?.distanceFromCentre).toBe(0);
+    expect(centre?.initialAccessState).toBe("buildable");
   });
 });
 
@@ -305,6 +321,84 @@ describe("ContentLoader issue accumulation", () => {
     expect(typeof issue?.itemIndex).toBe("number");
     expect(issue?.path).toBe("category");
     expect(typeof issue?.message).toBe("string");
+  });
+});
+
+describe("ContentLoader sector validation", () => {
+  it("accepts a valid sector", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      facilities: [validFacility()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [{
+        id: "centre",
+        name: "Ashford Valley",
+        biome: "temperate",
+        distanceFromCentre: 0,
+        siteTemplates: [{ templateId: "s1", tags: ["forest"] }],
+        hasTown: true,
+        initialAccessState: "buildable",
+      }],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects a sector with a missing id", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      facilities: [validFacility()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [{ name: "X", biome: "temperate", distanceFromCentre: 0, siteTemplates: [], hasTown: false, initialAccessState: "buildable" }],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "sectors" && i.path === "id")).toBe(true);
+  });
+
+  it("rejects a sector with an invalid initialAccessState", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      facilities: [validFacility()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, siteTemplates: [], hasTown: false, initialAccessState: "flying" }],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "sectors" && i.path === "initialAccessState")).toBe(true);
+  });
+
+  it("rejects a sector with a negative distanceFromCentre", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      facilities: [validFacility()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: -1, siteTemplates: [], hasTown: false, initialAccessState: "buildable" }],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "sectors" && i.path === "distanceFromCentre")).toBe(true);
+  });
+
+  it("rejects a site template with a non-array tags field", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      facilities: [validFacility()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, siteTemplates: [{ templateId: "t1", tags: "forest" }], hasTown: false, initialAccessState: "buildable" }],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "sectors")).toBe(true);
   });
 });
 

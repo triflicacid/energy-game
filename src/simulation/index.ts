@@ -35,6 +35,11 @@ export {
 } from "./CampaignState";
 
 export {
+  createCentreSector,
+  CentreSectorError,
+} from "./CentreSector";
+
+export {
   Inventory,
   type InventoryEventMap,
 } from "./Inventory";

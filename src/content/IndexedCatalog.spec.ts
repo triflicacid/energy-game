@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ContentBundle, ResearchNodeDef, ResourceDef } from "./defs";
+import type { ContentBundle, ResearchNodeDef, ResourceDef, SectorDef } from "./defs";
 import { loadBundledContent } from "./ContentLoader";
 import { buildIndexedCatalog } from "./IndexedCatalog";
 
@@ -13,6 +13,18 @@ function researchNode(id: string, parentIds: string[] = [], unlockIds: string[] 
   return { id, era: "opening", parentIds, researchCost: 0, unlockIds };
 }
 
+function sector(id: string, tags: string[][] = []): SectorDef {
+  return {
+    id,
+    name: id,
+    biome: "temperate",
+    distanceFromCentre: 0,
+    siteTemplates: tags.map((t, i) => ({ templateId: `${id}-site-${i}`, tags: t })),
+    hasTown: false,
+    initialAccessState: "buildable",
+  };
+}
+
 function bundle(overrides: Partial<ContentBundle> = {}): ContentBundle {
   return {
     resources: [resource("timber")],
@@ -20,6 +32,7 @@ function bundle(overrides: Partial<ContentBundle> = {}): ContentBundle {
     facilities: [],
     upgrades: [],
     researchNodes: [researchNode("root")],
+    sectors: [],
     ...overrides,
   };
 }
@@ -362,6 +375,65 @@ describe("aggregated error reporting", () => {
     expect(typeof issue.catalog).toBe("string");
     expect(typeof issue.itemId).toBe("string");
     expect(typeof issue.message).toBe("string");
+  });
+});
+
+describe("sector site tag validation", () => {
+  it("accepts a sector whose site tags all match a known facility validSiteTag", () => {
+    const result = buildIndexedCatalog(bundle({
+      facilities: [{
+        id: "mill",
+        behaviorId: "forestGrowth",
+        validSiteTags: ["forest"],
+        constructionCost: [],
+        constructionMoneyBase: 0,
+        constructionTimeHours: 1,
+        requiredResearch: [],
+        recipeIds: [],
+        upgradeIds: [],
+        capabilities: [],
+      }],
+      sectors: [sector("centre", [["forest"]])],
+    }));
+    expect(result.ok).toBe(true);
+  });
+
+  it("reports a sector site template using a tag absent from all facility validSiteTags", () => {
+    const result = buildIndexedCatalog(bundle({
+      sectors: [sector("centre", [["mystery-tag"]])],
+    }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "sectors" && i.itemId === "centre" && i.message.includes("mystery-tag"))).toBe(true);
+  });
+
+  it("reports a duplicate sector ID", () => {
+    const result = buildIndexedCatalog(bundle({
+      sectors: [sector("centre"), sector("centre")],
+    }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "sectors" && i.itemId === "centre")).toBe(true);
+  });
+
+  it("indexes sectors by ID in the returned catalog", () => {
+    const load = loadBundledContent();
+    if (!load.ok) throw new Error(JSON.stringify(load.issues));
+    const result = buildIndexedCatalog(load.bundle);
+    if (!result.ok) throw new Error(JSON.stringify(result.issues));
+    expect(result.catalog.getSector("centre")).toBeDefined();
+    expect(result.catalog.getSector("nonexistent")).toBeUndefined();
+  });
+
+  it("bundled centre sector has forest and waterwheel-site site templates", () => {
+    const load = loadBundledContent();
+    if (!load.ok) throw new Error(JSON.stringify(load.issues));
+    const result = buildIndexedCatalog(load.bundle);
+    if (!result.ok) throw new Error(JSON.stringify(result.issues));
+    const centre = result.catalog.getSector("centre");
+    const allTags = centre?.siteTemplates.flatMap((t) => t.tags) ?? [];
+    expect(allTags).toContain("forest");
+    expect(allTags).toContain("waterwheel-site");
   });
 });
 

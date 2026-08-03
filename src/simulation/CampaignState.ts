@@ -1,6 +1,7 @@
 // serializable campaign state; no dom, canvas, callbacks, or subscriptions
 
 import type { RngState } from "@shared";
+import type { SectorAccessState } from "@content/defs";
 import type { ClockSerialState } from "./SimulationClock";
 import type { HistoryEntry } from "./EventHistory";
 
@@ -37,6 +38,7 @@ export type ResearchProgressState = {
 export type SectorSerialState = {
   readonly id: string;
   readonly definitionId: string;
+  readonly accessState: SectorAccessState;
   readonly townIds: readonly string[];
   readonly siteIds: readonly string[];
 };
