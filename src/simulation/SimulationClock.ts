@@ -6,7 +6,7 @@ import { type SimHours, simHours } from "@shared/units";
 import type { JsonSerializable } from "@shared/JsonSerializable";
 
 /** supported wall clock speed multipliers that the application driver may use */
-export const SPEED_MULTIPLIERS = [1, 2, 4, 8] as const;
+export const SPEED_MULTIPLIERS = [0.5, 1, 2, 4, 8] as const;
 /** @see SPEED_MULTIPLIERS */
 export type SpeedMultiplier = (typeof SPEED_MULTIPLIERS)[number];
 

@@ -16,6 +16,7 @@ export class UiShell {
   private readonly tickDisplay: HTMLElement;
   private readonly fpsDisplay: HTMLElement;
   private readonly pauseBtn: HTMLButtonElement;
+  private readonly speedBtns: Map<SpeedMultiplier, HTMLButtonElement> = new Map();
   private readonly unsubscribePaused: () => void;
   private readonly unsubscribeResumed: () => void;
   private readonly unsubscribeTick: () => void;
@@ -40,6 +41,7 @@ export class UiShell {
     });
 
     this.syncPauseButton(app.getClock().isPaused());
+    this.setActiveSpeedBtn(1);
   }
 
   /** removes event subscriptions and detaches the toolbar from the DOM */
@@ -56,29 +58,22 @@ export class UiShell {
     this.pauseBtn.setAttribute("aria-pressed", String(paused));
   }
 
+  private setActiveSpeedBtn(speed: SpeedMultiplier): void {
+    for (const [s, btn] of this.speedBtns) {
+      btn.classList.toggle("toolbar-speed-btn--active", s === speed);
+    }
+  }
+
   private buildControls(): HTMLElement {
     const bar = document.createElement("div");
     bar.setAttribute("role", "toolbar");
     bar.setAttribute("aria-label", "simulation controls");
-    bar.style.cssText = [
-      "position:absolute",
-      "top:0",
-      "left:0",
-      "right:0",
-      "display:flex",
-      "align-items:center",
-      "gap:8px",
-      "padding:8px 12px",
-      "background:rgba(0,0,0,0.65)",
-      "color:#e0e0e0",
-      "font:14px/1 monospace",
-      "user-select:none",
-    ].join(";");
+    bar.classList.add("toolbar");
 
     const pauseBtn = document.createElement("button");
     pauseBtn.setAttribute("data-pause-btn", "");
     pauseBtn.setAttribute("type", "button");
-    pauseBtn.style.cssText = "cursor:pointer;padding:4px 10px;display:inline-flex;align-items:center";
+    pauseBtn.classList.add("toolbar-btn", "toolbar-btn--icon");
     pauseBtn.addEventListener("click", () => {
       if (this.app.getClock().isPaused()) {
         this.app.resume();
@@ -93,10 +88,12 @@ export class UiShell {
       btn.setAttribute("type", "button");
       btn.setAttribute("aria-label", `speed ${s}x`);
       btn.textContent = `${s}x`;
-      btn.style.cssText = "cursor:pointer;padding:4px 8px";
+      btn.classList.add("toolbar-btn");
       btn.addEventListener("click", () => {
         this.app.setSpeed(s as SpeedMultiplier);
+        this.setActiveSpeedBtn(s as SpeedMultiplier);
       });
+      this.speedBtns.set(s as SpeedMultiplier, btn);
       bar.appendChild(btn);
     }
 
@@ -110,7 +107,7 @@ export class UiShell {
     const fpsDisplay = document.createElement("span");
     fpsDisplay.setAttribute("data-fps-display", "");
     fpsDisplay.setAttribute("aria-live", "off");
-    fpsDisplay.style.cssText = "margin-left:auto;opacity:0.6";
+    fpsDisplay.classList.add("toolbar-fps");
     fpsDisplay.textContent = "0 fps";
     bar.appendChild(fpsDisplay);
 

@@ -29,3 +29,40 @@ html, body {
     pointer-events: auto;
 }
 
+.toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #e0e0e0;
+    font: 14px/1 monospace;
+    user-select: none;
+}
+
+.toolbar-btn {
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.toolbar-btn--icon {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+}
+
+.toolbar-speed-btn--active {
+    background: #4a9edd;
+    color: #fff;
+    border: none;
+}
+
+.toolbar-fps {
+    margin-left: auto;
+    opacity: 0.6;
+}
+
