@@ -1,0 +1,13 @@
+[
+  {
+    "id": "harvest-timber",
+    "inputs": [],
+    "outputs": [{ "resourceId": "timber", "qty": 50 }],
+    "byproducts": [{ "resourceId": "wood-waste", "qty": 10 }],
+    "durationHours": 1,
+    "mechPowerKW": 0,
+    "requiredResearch": ["basic-forestry"],
+    "requiredCapabilities": ["forestry"]
+  }
+]
+

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "timber",
+    "category": "organic",
+    "unit": "kg",
+    "storable": true,
+    "importable": true,
+    "renewable": true,
+    "waste": false,
+    "hazardous": false
+  },
+  {
+    "id": "wood-waste",
+    "category": "organic",
+    "unit": "kg",
+    "storable": true,
+    "importable": false,
+    "renewable": true,
+    "waste": true,
+    "hazardous": false
+  }
+]
+

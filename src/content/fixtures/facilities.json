@@ -1,0 +1,39 @@
+[
+  {
+    "id": "forestry-operation",
+    "behaviorId": "forestGrowth",
+    "validSiteTags": ["forest"],
+    "constructionCost": [{ "resourceId": "timber", "qty": 20 }],
+    "constructionMoneyBase": 100,
+    "constructionTimeHours": 24,
+    "requiredResearch": ["basic-forestry"],
+    "recipeIds": ["harvest-timber"],
+    "upgradeIds": [],
+    "capabilities": ["forestry"]
+  },
+  {
+    "id": "waterwheel",
+    "behaviorId": "mechanicalGenerator",
+    "validSiteTags": ["waterwheel-site"],
+    "constructionCost": [{ "resourceId": "timber", "qty": 80 }],
+    "constructionMoneyBase": 200,
+    "constructionTimeHours": 48,
+    "requiredResearch": ["waterwheel-construction"],
+    "recipeIds": [],
+    "upgradeIds": [],
+    "capabilities": ["mechanicalGeneration"]
+  },
+  {
+    "id": "mechanical-workshop",
+    "behaviorId": "materialProcessor",
+    "validSiteTags": ["workshop-site"],
+    "constructionCost": [{ "resourceId": "timber", "qty": 40 }],
+    "constructionMoneyBase": 150,
+    "constructionTimeHours": 36,
+    "requiredResearch": ["mechanical-workshop-construction"],
+    "recipeIds": [],
+    "upgradeIds": [],
+    "capabilities": ["research", "mechanicalProcessing"]
+  }
+]
+
