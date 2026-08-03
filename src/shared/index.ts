@@ -46,6 +46,7 @@ export type {
   FacilityId,
   ContractId,
   ConstructionJobId,
+  ResourceId,
 } from "./IdCounter";
 export {
   IdCounter,
@@ -55,6 +56,7 @@ export {
   makeFacilityId,
   makeContractId,
   makeConstructionJobId,
+  makeResourceId,
 } from "./IdCounter";
 export type { RngState } from "./Rng";
 export { Rng, seedFromString } from "./Rng";

@@ -1,14 +1,16 @@
 // canonical content definition types used by the loading boundary and simulation
 
+import type { ResourceId } from "@shared/IdCounter";
+
 /** a quantity of a named resource used in recipes and construction costs */
 export interface ResourceRef {
-  readonly resourceId: string;
+  readonly resourceId: ResourceId;
   readonly qty: number;
 }
 
 /** immutable definition of a storable/tradeable material */
 export interface ResourceDef {
-  readonly id: string;
+  readonly id: ResourceId;
   readonly category: string;
   readonly unit: string;
   readonly storable: boolean;

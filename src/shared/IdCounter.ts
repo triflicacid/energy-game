@@ -21,6 +21,9 @@ export type ContractId = Brand<string, "ContractId">;
 /** unique runtime identifier for a construction job */
 export type ConstructionJobId = Brand<string, "ConstructionJobId">;
 
+/** stable identifier for a content-defined resource, sourced from ResourceDef.id */
+export type ResourceId = Brand<string, "ResourceId">;
+
 /** counter-based runtime ID generator; state is serializable for save and load */
 export class IdCounter {
   private count: number;
@@ -73,5 +76,10 @@ export function makeContractId(counter: IdCounter): ContractId {
 /** creates a new ConstructionJobId using counter */
 export function makeConstructionJobId(counter: IdCounter): ConstructionJobId {
   return `job:${counter.next()}` as ConstructionJobId;
+}
+
+/** wraps a validated content string as a ResourceId */
+export function makeResourceId(id: string): ResourceId {
+  return id as ResourceId;
 }
 

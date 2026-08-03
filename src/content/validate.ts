@@ -1,5 +1,6 @@
 // structural validators for content definition types
 
+import type { ResourceId } from "@shared/IdCounter";
 import type {
   ContentBundle,
   FacilityDef,
@@ -118,7 +119,7 @@ function readResourceRefArray(
       issues.push({ catalog, itemIndex: index, itemId: id, path: `${field}[${i}].qty`, message: "must be a finite positive number" });
       ok = false;
     }
-    if (resourceId && qty !== null) result.push({ resourceId, qty });
+    if (resourceId && qty !== null) result.push({ resourceId: resourceId as ResourceId, qty });
   }
   return ok ? result : null;
 }
@@ -153,7 +154,7 @@ export function validateResourceDef(
   if (hazardous === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "hazardous", message: "must be a boolean" });
 
   if (!id || !category || !unit || storable === null || importable === null || renewable === null || waste === null || hazardous === null) return null;
-  return { id, category, unit, storable, importable, renewable, waste, hazardous };
+  return { id: id as ResourceId, category, unit, storable, importable, renewable, waste, hazardous };
 }
 
 /** validates one raw recipe entry, accumulating issues and returning the typed def or null */
