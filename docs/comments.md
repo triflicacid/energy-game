@@ -7,6 +7,7 @@
 - only where the *why* isn't obvious from the code itself
 - no restating what the code does
 - no progress notes, plans, or change indicators
+- no banner or section-header comments (rows of dashes, equals signs, or similar decorators used as visual dividers)
 
 ```ts
 // bad

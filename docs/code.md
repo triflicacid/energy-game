@@ -51,6 +51,38 @@ class Foo {
 }
 ```
 
+use typescript's `private` modifier, not ecmascript private fields (`#`). private members carry no name decoration — no leading underscore, no prefix, no suffix.
+
+```ts
+// bad
+class Foo {
+    #value = 0;
+    _value = 0;
+    private _value = 0;
+}
+
+// good
+class Foo {
+    private value = 0;
+}
+```
+
+do not use `get`/`set` accessors. expose state through explicit methods named `getX()` / `setX()`.
+
+```ts
+// bad
+class Foo {
+    get value() { return this.v; }
+    set value(x: number) { this.v = x; }
+}
+
+// good
+class Foo {
+    public getValue(): number { return this.v; }
+    public setValue(x: number): void { this.v = x; }
+}
+```
+
 ## classes and inheritance
 
 prefer classes over loose functions and plain objects. model domain concepts as types in a hierarchy.

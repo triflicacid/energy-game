@@ -5,23 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Energy Game</title>
     <link rel="icon" href="./static/logo.ico" />
-    <style>
-        html, body {
-            margin: 0;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #0a0a1a;
-        }
-        #splash {
-            width: 200px;
-            height: 200px;
-        }
-    </style>
+    <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
-    <img id="splash" src="./static/smiley.svg" alt="Smiley" />
+    <canvas id="game-canvas"></canvas>
+    <div id="ui-root"></div>
     <script type="module" src="/src/index.ts"></script>
 </body>
 </html>

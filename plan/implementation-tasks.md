@@ -365,7 +365,7 @@ Each research facility independently assigns its output to a target node. The `R
 
 # Phase M/V: first headless vertical slice
 
-## M00 — Hand-authored centre sector
+## ✅ M00 — Hand-authored centre sector
 
 **Depends on:** S01, C01
 
