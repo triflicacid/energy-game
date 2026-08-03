@@ -201,3 +201,79 @@ describe("SimulationClock — speed", () => {
     expect(clock.getTick()).toBe(1);
   });
 });
+
+describe("SimulationClock — getState / restore", () => {
+  it("getState reflects initial values", () => {
+    const { clock } = makeClock();
+    const s = clock.getState();
+    expect(s.tick).toBe(0);
+    expect(s.gameTime).toBe(0);
+    expect(s.paused).toBe(false);
+    expect(s.speed).toBe(1);
+  });
+
+  it("getState reflects values after ticks and speed change", () => {
+    const { clock } = makeClock();
+    clock.setSpeed(4);
+    clock.advanceTick(3);
+    const s = clock.getState();
+    expect(s.tick).toBe(3);
+    expect(s.gameTime).toBe(3);
+    expect(s.speed).toBe(4);
+  });
+
+  it("getState paused reflects pause", () => {
+    const { clock } = makeClock();
+    clock.pause();
+    expect(clock.getState().paused).toBe(true);
+  });
+
+  it("restore sets all fields", () => {
+    const { clock, bus } = makeClock();
+    clock.restore({ tick: 10, gameTime: 10, paused: true, speed: 2 });
+    expect(clock.getTick()).toBe(10);
+    expect(clock.getGameTime()).toBe(10);
+    expect(clock.isPaused()).toBe(true);
+    expect(clock.getSpeed()).toBe(2);
+    // confirm the bus is still wired after restore
+    clock.resume();
+    clock.advanceTick(1);
+    expect(clock.getTick()).toBe(11);
+    void bus;
+  });
+
+  it("getState then restore is a round trip", () => {
+    const { clock } = makeClock();
+    clock.setSpeed(8);
+    clock.advanceTick(5);
+    clock.pause();
+    const snap = clock.getState();
+
+    const { clock: clock2 } = makeClock();
+    clock2.restore(snap);
+    expect(clock2.getState()).toEqual(snap);
+  });
+
+  it("restore throws on negative tick", () => {
+    const { clock } = makeClock();
+    expect(() => clock.restore({ tick: -1, gameTime: 0, paused: false, speed: 1 })).toThrow(RangeError);
+  });
+
+  it("restore throws on non-integer tick", () => {
+    const { clock } = makeClock();
+    expect(() => clock.restore({ tick: 1.5, gameTime: 0, paused: false, speed: 1 })).toThrow(RangeError);
+  });
+
+  it("restore throws on negative gameTime", () => {
+    const { clock } = makeClock();
+    expect(() => clock.restore({ tick: 0, gameTime: -1, paused: false, speed: 1 })).toThrow(RangeError);
+  });
+
+  it("restore throws on invalid speed", () => {
+    const { clock } = makeClock();
+    expect(() =>
+      clock.restore({ tick: 0, gameTime: 0, paused: false, speed: 3 as 1 }),
+    ).toThrow(RangeError);
+  });
+});
+

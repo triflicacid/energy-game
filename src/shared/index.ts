@@ -58,3 +58,4 @@ export {
 } from "./IdCounter";
 export type { RngState } from "./Rng";
 export { Rng, seedFromString } from "./Rng";
+export type { JsonSerializable } from "./JsonSerializable";

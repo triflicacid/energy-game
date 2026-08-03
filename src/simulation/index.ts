@@ -7,4 +7,29 @@ export {
   SPEED_MULTIPLIERS,
   type SimClockEventMap,
   type SpeedMultiplier,
+  type ClockSerialState,
 } from "./SimulationClock";
+
+export {
+  EventHistory,
+  DEFAULT_HISTORY_CAPACITY,
+  type HistoryEntry,
+} from "./EventHistory";
+
+export {
+  CAMPAIGN_STATE_VERSION,
+  createCampaignState,
+  serializeCampaignState,
+  deserializeCampaignState,
+  type CampaignState,
+  type ReadonlyCampaignState,
+  type CreateCampaignOptions,
+  type IdCounterStates,
+  type InventoryState,
+  type ResearchProgressState,
+  type SectorSerialState,
+  type TownSerialState,
+  type SiteSerialState,
+  type FacilitySerialState,
+  type ContractSerialState,
+} from "./CampaignState";
