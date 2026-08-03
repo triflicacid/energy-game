@@ -49,6 +49,33 @@ Upgrades: larger/adjustable sails, rotating cap, gearing, storm brake, iron rein
 
 Upgrades: improved windings, bearings, governor, insulation, larger generator.
 
+## Mechanical processing workshop
+
+Like towns, the mechanical workshop progresses through named tiers rather than being a single static facility. It starts as a modest woodworking shop and becomes a more capable industrial processor as the player researches and rebuilds it.
+
+### Woodworking shop — Era 0
+
+- Timber frame, hand tools, simple belt-driven machinery
+- Processes timber into planks, beams, and rough components
+- Generates basic research capability through craft knowledge
+- Requires local mechanical power to operate above manual speed
+
+### Mechanical workshop — Era 1
+
+- Iron fittings, better gearing, and organized layout
+- Handles timber, charcoal preparation, and early metalwork
+- Notably improved research output
+
+### Machine shop — Era 2
+
+- Precision iron and early steel tooling
+- Enables fabrication of components for dynamos, turbines, and boilers
+- Required for some mid-game plant construction
+
+### Industrial workshop — Era 3+
+
+Later tiers add electrical drive, automated feed, heat treatment, and specialist fabrication capabilities. Each tier is a successor facility at the same site, not a numeric upgrade, so it has a distinct sprite and construction cost.
+
 ## Hydropower
 
 ### Iron waterwheel — Era 1
