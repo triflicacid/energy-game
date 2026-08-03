@@ -1,1 +1,3 @@
-console.log('Energy Game ⚡');
+import { createApplication } from "@application";
+
+createApplication();
