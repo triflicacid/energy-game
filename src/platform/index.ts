@@ -1,3 +1,10 @@
 // browser and electron integration: storage adapters and host startup
 
-export {};
+export { Keyboard } from "./Keyboard";
+export type {
+  KeyboardKeyDownListener,
+  KeyboardKeyUpListener,
+  KeyboardKeyMatchOptions,
+  KeyboardConfig,
+} from "./Keyboard";
+export type { KeyboardEventSource } from "./KeyboardEventSource";
