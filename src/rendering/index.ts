@@ -10,7 +10,7 @@ export {
 
 export { AtlasLoader, type AtlasLoadState, type ImageFactory, type LoadableImage } from "./AtlasLoader";
 export { WorldAtlasPainter, MISSING_SPRITE_COLOR } from "./WorldAtlasPainter";
-export { CanvasRenderer, WORLD_ATLAS_URL, CELL_SIZE, resizeBackingBuffer } from "./CanvasRenderer";
+export { CanvasRenderer, WORLD_ATLAS_URL, CELL_SIZE, MAX_ZOOM, resizeBackingBuffer } from "./CanvasRenderer";
 export { type SceneCell, type WorldScene } from "./WorldScene";
 export {
   projectSectorScene,
@@ -19,3 +19,12 @@ export {
   type TownCellLayout,
   type TownPresentationLayouts,
 } from "./SceneProjector";
+export {
+  getMinZoom,
+  clampZoom,
+  clampPan,
+  zoomTowardPoint,
+  screenToWorld,
+  worldToScreen,
+  type ViewMode,
+} from "./CameraState";

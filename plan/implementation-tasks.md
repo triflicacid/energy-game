@@ -8,13 +8,17 @@ It supplements [the implementation roadmap](implementation-roadmap.md). The road
 
 ## Current baseline
 
-EnergyGame now contains tested foundation, content, simulation, application-shell, sprite-atlas, and initial UI modules. For rendering specifically:
+EnergyGame contains tested foundation, content, simulation, application-shell, sprite-atlas, rendering, and initial UI modules. Current rendering state:
 
-- `A00` source sprites, deterministic atlas generation/checking, typed descriptors, explicit category rows, and reservoir-mask helpers exist.
-- `U00` provides the application canvas, DOM overlay root, frame lifecycle, pause/speed controls, and renderer disposal boundary.
-- `CanvasRenderer` currently clears the canvas to a solid color and redraws after simulation ticks; it does not load the atlas or consume campaign state.
-- Centre-sector content contains biome and logical site coordinates, but runtime state does not currently preserve enough template/layout identity for a robust renderer projection.
-- Rendering must remain a presentation consumer. Do not solve missing scene data by putting canvas pixels, atlas rectangles, or image objects into campaign/save state.
+- `A00` ✅ source sprites, deterministic atlas packer, typed descriptors, explicit category rows, and reservoir-mask helpers.
+- `U00` ✅ application canvas, DOM overlay root, frame lifecycle, pause/speed controls, renderer disposal boundary, and keyboard platform layer.
+- `U01a` ✅ `AtlasLoader` with injectable image boundary; `WorldAtlasPainter` draws sprites by semantic ID with anchor offset; DPR-aware `resizeBackingBuffer`; atlas error/loading fallbacks.
+- `U01b` ✅ `WorldScene` / `SceneCell` immutable scene model; `SceneProjector.projectSectorScene` pure function; `SiteSerialState.templateId` preserves template identity; `TownPresentationLayouts` deterministic town grid positions; 402 tests passing at completion.
+- `U01c` ✅ `CanvasRenderer` draws layered biome → ground overlays → entities → facilities using `WorldAtlasPainter`; `Application` eagerly loads bundled content, builds `IndexedCatalog`, and creates the initial `CampaignState` with the centre sector stamped in.
+- **Camera core** ✅ `CameraState.ts` pure math (world/screen transforms, zoom-toward-point, clamp helpers, 29 tests); `CanvasRenderer` has scroll-to-zoom (10% step, max 10×), unbounded drag-to-pan in both views, sector detail / campaign map view modes, `M` key toggle, shift+scroll transition to campaign map at `0.5 × fitZoom`, initial zoom at `2 × fitZoom` for immediate panning room.
+- **Campaign map placeholder** ✅ dark background with a biome-coloured flat-top hex node, sector name label, and return-hint text; drag-pan is unbounded.
+- **Design notes recorded**: mechanical workshop tier progression (`plan/power-plants.md`); camera and navigation model including two view modes and control scheme (`plan/map-and-regions.md`).
+- 436 tests passing; 27 test files.
 
 ## Non-negotiable decisions
 
@@ -105,11 +109,12 @@ S02 + S03 + M00
 F00
  └─ ✅ A00 sprite-atlas pipeline
      └─ ✅ U00 browser application shell
-         ├─ U01a atlas/canvas drawing foundation
-         │   └─ U01b read-only world scene (+ M00)
-         │       └─ U01c layered centre-sector composition
+         ├─ ✅ U01a atlas/canvas drawing foundation
+         │   └─ ✅ U01b read-only world scene (+ M00)
+         │       └─ ✅ U01c layered centre-sector composition
+         │           │   (camera core also complete — see U01e note below)
          │           └─ U01d reservoir/town variants
-         │               └─ U01e camera and interaction rendering (+ U02)
+         │               └─ U01e (remainder) interaction rendering (+ U02)
          └─ U02 HTML status/build/research UI (+ S02 + S03 + V01)
 
 E00 + V02
@@ -569,19 +574,26 @@ Integrate a tested scenario:
 
 **Read:** construction-mode and anchoring sections of `plan/sprites-and-atlases.md`, camera and navigation section of `plan/map-and-regions.md`
 
-**Deliverables:**
+**Camera core — already complete (implemented alongside U01c):**
 
-- Implement two rendering modes on one canvas: **sector detail view** and **campaign map view**, as defined in the camera and navigation section of `plan/map-and-regions.md`.
-- Sector detail view: world/screen transforms, pan bounded to the sector tile grid, scroll-wheel zoom bounded between show-all-sector minimum and a tunable maximum, resize handling, and spatial hit testing.
-- Campaign map view: hex-node layout at axial `(gridQ, gridR)` positions, pan and zoom over the hex graph, click-to-enter-sector, and placeholder hex rendering (full visual design is deferred to Phase 5).
-- `M` key toggles between sector detail and campaign map views; must not fire when keyboard focus is inside a text input or dialog.
-- Shift+scroll zooming outward beyond a tunable threshold in sector detail view transitions to campaign map view.
-- Render selection and placement footprint previews independently from sprite opaque bounds.
-- Accept eligible cells/footprints from a typed application placement query and draw a faint construction-suitability outline only while construction mode is active.
-- Update highlights when facility choice, rotation, ownership, occupancy, research/biome access, or placement state changes.
-- Keep placement decisions out of the renderer; it presents eligibility but never calculates or mutates it.
+- `CameraState.ts` pure math module: `getMinZoom`, `clampZoom`, `clampPan` (with sector-centering when smaller than viewport), `zoomTowardPoint`, `screenToWorld`, `worldToScreen`; 29 unit tests.
+- `CanvasRenderer` two view modes on one canvas: sector detail and campaign map placeholder.
+- Scroll-to-zoom toward cursor (10% per step, max 10×, lower bound `0.5 × fitZoom`).
+- Unbounded drag-to-pan in both sector and campaign map views; `event.preventDefault()` prevents browser native drag from swallowing `mousemove` events.
+- `M` key toggles between views; guard prevents firing when keyboard focus is inside a text input, `<select>`, contenteditable, or dialog.
+- Shift+scroll-out at minimum zoom → campaign map view; shift+scroll-in in campaign map → sector view; click in campaign map → sector view.
+- Initial zoom at `2 × fitZoom` so there is immediate panning room on first load.
+- Campaign map placeholder: dark background, biome-coloured flat-top hex node, sector name, return-hint text; drag-pans the hex.
 
-**Acceptance:** transform round trips and hit tests are unit tested across zoom/DPR values; highlights align to gameplay footprints, update with eligibility, and disappear on mode exit; invalid cells are not highlighted; rendering remains deterministic for equal scene and viewport state; `M` key switches views and shift+scroll-out triggers the view transition at the documented threshold; the `M` key is inert when a text input or dialog has focus.
+**Remaining deliverables (depends on U02 placement API):**
+
+- Spatial hit testing: screen → world → cell, resize-safe, unit tested across zoom/DPR values.
+- Selection rendering: highlight the selected object's gameplay footprint (not sprite opaque bounds).
+- Placement footprint preview: accept eligible cells/footprints from a typed application placement query; draw a faint construction-suitability outline only while construction mode is active.
+- Highlight updates: re-evaluate when facility choice, rotation, ownership, occupancy, research/biome access, or placement state changes.
+- Renderer never calculates or mutates placement eligibility.
+
+**Acceptance (remaining):** transform round trips and hit tests are unit tested across zoom/DPR values; highlights align to gameplay footprints, update with eligibility, and disappear on mode exit; invalid cells are not highlighted; rendering remains deterministic for equal scene and viewport state.
 
 ## U02 — Initial HTML UI
 

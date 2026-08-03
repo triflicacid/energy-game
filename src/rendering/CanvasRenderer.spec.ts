@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { resizeBackingBuffer } from "./CanvasRenderer";
 import { AtlasLoader } from "./AtlasLoader";
 import { CanvasRenderer } from "./CanvasRenderer";
@@ -86,6 +86,13 @@ function makeApp() {
   const fillRect = vi.fn();
   const drawImage = vi.fn();
   const setTransform = vi.fn();
+  const beginPath = vi.fn();
+  const moveTo = vi.fn();
+  const lineTo = vi.fn();
+  const closePath = vi.fn();
+  const fill = vi.fn();
+  const stroke = vi.fn();
+  const fillText = vi.fn();
   const canvas = { width: 0, height: 0, clientWidth: 300, clientHeight: 200 };
   const ctxMock = {
     canvas,
@@ -93,10 +100,28 @@ function makeApp() {
     imageSmoothingEnabled: true,
     clearRect,
     fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
     fillRect,
     drawImage,
+    beginPath,
+    moveTo,
+    lineTo,
+    closePath,
+    fill,
+    stroke,
+    fillText,
+    font: "",
+    textAlign: "",
+    textBaseline: "",
   };
-  const canvasEl = { ...canvas, getContext: (id: string) => id === "2d" ? ctxMock : null };
+  const canvasEl = {
+    ...canvas,
+    getContext: (id: string) => id === "2d" ? ctxMock : null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    style: { cursor: "" },
+  };
 
   const tickSubs: (() => void)[] = [];
   const app = {
@@ -178,6 +203,39 @@ describe("CanvasRenderer", () => {
     stub.triggerLoad();
 
     expect(clearRect.mock.calls.length).toBe(callsAfterDispose);
+  });
+
+  it("getViewMode() returns 'sector' on construction", () => {
+    const stub = makeStub();
+    const loader = new AtlasLoader("fake.png", () => stub);
+    const { app } = makeApp();
+    const renderer = new CanvasRenderer(app, loader);
+    expect(renderer.getViewMode()).toBe("sector");
+    renderer.dispose();
+  });
+
+  it("getZoom() returns a positive value on construction", () => {
+    const stub = makeStub();
+    const loader = new AtlasLoader("fake.png", () => stub);
+    const { app } = makeApp();
+    const renderer = new CanvasRenderer(app, loader);
+    expect(renderer.getZoom()).toBeGreaterThan(0);
+    renderer.dispose();
+  });
+
+  it("getPan() returns an object with panX and panY on construction", () => {
+    const stub = makeStub();
+    const loader = new AtlasLoader("fake.png", () => stub);
+    const { app } = makeApp();
+    const renderer = new CanvasRenderer(app, loader);
+    const pan = renderer.getPan();
+    expect(typeof pan.panX).toBe("number");
+    expect(typeof pan.panY).toBe("number");
+    renderer.dispose();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 });
 

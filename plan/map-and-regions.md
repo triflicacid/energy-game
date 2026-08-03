@@ -248,9 +248,21 @@ Shows the connected sector graph at a scale where each sector is a single hex no
 |---|---|
 | Press `M` | Toggle between sector detail view and campaign map view |
 | Shift+scroll outward far enough | Transition from sector detail view to campaign map view |
+| Scroll inward in campaign map (shift held) | Enter the hovered sector's detail view |
 | Click a hex node in campaign map | Enter that sector's detail view |
 
 The transition threshold for shift+scroll should be reached before the sector tiles become too small to distinguish; the exact zoom level is a tunable constant, not part of the simulation model.
+
+### Controls summary
+
+| Gesture | Sector detail | Campaign map |
+|---|---|---|
+| Scroll wheel | Zoom in/out toward cursor | — |
+| Shift + scroll (out at min zoom) | Switch to campaign map | — |
+| Shift + scroll in | — | Enter sector |
+| Click + drag | Pan (unbounded — can drag into the void) | Pan (unbounded) |
+| Click (no drag) | — | Enter sector |
+| M key | Switch to campaign map | Switch to sector |
 
 ### Design notes
 
