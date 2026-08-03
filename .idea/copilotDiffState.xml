@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/docs/comments.md">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/docs/comments.md" />
+              <option name="originalContent" value="# comment guidelines&#10;&#10;## inline comments&#10;&#10;- all lowercase&#10;- only where the *why* isn't obvious from the code itself&#10;- no restating what the code does&#10;- no progress notes, plans, or change indicators&#10;&#10;```ts&#10;// bad&#10;// increment the counter by one&#10;counter++;&#10;&#10;// bad&#10;// this will be expanded later&#10;doThing();&#10;&#10;// good&#10;// wraps at 255 to stay within a single byte&#10;counter = (counter + 1) % 256;&#10;```&#10;&#10;## tsdoc&#10;&#10;every exported function, class, and type gets a tsdoc block. keep it to one line unless parameters genuinely need explanation.&#10;&#10;```ts&#10;/** returns the clamped value between min and max. */&#10;function clamp(value: number, min: number, max: number): number { ... }&#10;&#10;/**&#10; * schedules a callback on the next animation frame.&#10; * @param callback - called with elapsed ms since last frame&#10; */&#10;function onFrame(callback: (dt: number) =&gt; void): void { ... }&#10;```&#10;&#10;- no `@returns` unless the return value is non-obvious&#10;- no `@param` unless the parameter name alone is ambiguous&#10;- no `@description` tag — just write the description directly&#10;- no trailing period required, but be consistent within a file&#10;&#10;" />
+              <option name="updatedContent" value="# comment guidelines&#10;&#10;## inline comments&#10;&#10;- all lowercase&#10;- no dashes (en, em, or hyphen), reword to avoid them&#10;- only where the *why* isn't obvious from the code itself&#10;- no restating what the code does&#10;- no progress notes, plans, or change indicators&#10;&#10;```ts&#10;// bad&#10;// increment the counter by one&#10;counter++;&#10;&#10;// bad&#10;// this will be expanded later&#10;doThing();&#10;&#10;// good&#10;// wraps at 255 to stay within a single byte&#10;counter = (counter + 1) % 256;&#10;```&#10;&#10;## tsdoc&#10;&#10;every exported function, class, and type gets a tsdoc block. keep it to one line unless parameters genuinely need explanation.&#10;&#10;```ts&#10;/** returns the clamped value between min and max. */&#10;function clamp(value: number, min: number, max: number): number { ... }&#10;&#10;/**&#10; * schedules a callback on the next animation frame.&#10; * @param callback called with elapsed ms since last frame&#10; */&#10;function onFrame(callback: (dt: number) =&gt; void): void { ... }&#10;```&#10;&#10;- no `@returns` unless the return value is non-obvious&#10;- no `@param` unless the parameter name alone is ambiguous&#10;- no `@description` tag — just write the description directly&#10;- no trailing period required, but be consistent within a file&#10;&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
