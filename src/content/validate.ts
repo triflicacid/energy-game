@@ -229,7 +229,10 @@ export function validateFacilityDef(
   const capabilities = readStringArray(o, "capabilities", issues, catalog, index, id);
 
   if (!id || !behaviorId || !validSiteTags || !constructionCost || constructionMoneyBase === null || constructionTimeHours === null || !requiredResearch || !recipeIds || !upgradeIds || !capabilities) return null;
-  return { id, behaviorId, validSiteTags, constructionCost, constructionMoneyBase, constructionTimeHours, requiredResearch, recipeIds, upgradeIds, capabilities };
+  // spriteId is optional; present only for facilities with authored sprites
+  const rawSprite = o["spriteId"];
+  const spriteId = typeof rawSprite === "string" && rawSprite.trim().length > 0 ? rawSprite : undefined;
+  return { id, behaviorId, validSiteTags, constructionCost, constructionMoneyBase, constructionTimeHours, requiredResearch, recipeIds, upgradeIds, capabilities, ...(spriteId !== undefined ? { spriteId } : {}) };
 }
 
 /** validates one raw upgrade entry, accumulating issues and returning the typed def or null */

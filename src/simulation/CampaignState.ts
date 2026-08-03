@@ -53,6 +53,8 @@ export type TownSerialState = {
 export type SiteSerialState = {
   readonly id: string;
   readonly sectorId: string;
+  /** stable template identifier from SiteTemplateDef; used to recover spatial position */
+  readonly templateId: string;
   readonly tags: readonly string[];
   readonly facilityId: string | null;
 };

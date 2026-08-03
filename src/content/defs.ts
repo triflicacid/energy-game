@@ -87,6 +87,8 @@ export type FacilityDef = {
   readonly recipeIds: readonly string[];
   readonly upgradeIds: readonly string[];
   readonly capabilities: readonly string[];
+  /** default world sprite ID; omitted for facilities with no authored sprite yet */
+  readonly spriteId?: string;
 };
 
 /** immutable definition of a facility upgrade */

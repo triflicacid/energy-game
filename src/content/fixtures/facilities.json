@@ -14,6 +14,7 @@
   {
     "id": "waterwheel",
     "behaviorId": "mechanicalGenerator",
+    "spriteId": "waterwheel",
     "validSiteTags": ["waterwheel-site"],
     "constructionCost": [{ "resourceId": "timber", "qty": 80 }],
     "constructionMoneyBase": 200,
@@ -26,6 +27,7 @@
   {
     "id": "mechanical-workshop",
     "behaviorId": "materialProcessor",
+    "spriteId": "mechanical-workshop",
     "validSiteTags": ["workshop-site"],
     "constructionCost": [{ "resourceId": "timber", "qty": 40 }],
     "constructionMoneyBase": 150,

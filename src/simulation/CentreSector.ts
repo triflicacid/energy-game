@@ -53,7 +53,7 @@ export function createCentreSector(state: CampaignState, catalog: IndexedCatalog
   const siteIds: string[] = [];
   for (const template of def.siteTemplates) {
     const siteId = makeSiteId(siteCounter);
-    newSites[siteId] = { id: siteId, sectorId, tags: template.tags, facilityId: null };
+    newSites[siteId] = { id: siteId, sectorId, templateId: template.templateId, tags: template.tags, facilityId: null };
     siteIds.push(siteId);
   }
 
