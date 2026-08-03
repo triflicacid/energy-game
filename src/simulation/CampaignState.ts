@@ -22,11 +22,15 @@ export type InventoryState = {
   readonly quantities: Readonly<Record<string, number>>;
 };
 
-/** research tree progress */
+/**
+ * research tree progress
+ *
+ * multiple nodes may be in progress simultaneously; each entry records
+ * accumulated points for a node that has not yet been completed
+ */
 export type ResearchProgressState = {
   readonly completed: readonly string[];
-  readonly activeNodeId: string | null;
-  readonly accumulatedCost: number;
+  readonly progress: Readonly<Record<string, number>>;
 };
 
 /** serialized sector instance; content definition referenced by id */
@@ -114,7 +118,7 @@ export function createCampaignState(opts: CreateCampaignOptions): CampaignState 
     },
     money: startingMoney,
     inventory: { quantities: {} },
-    research: { completed: [], activeNodeId: null, accumulatedCost: 0 },
+    research: { completed: [], progress: {} },
     sectors: {},
     sites: {},
     towns: {},

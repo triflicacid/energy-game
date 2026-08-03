@@ -46,3 +46,9 @@ export {
   type RecipeResult,
 } from "./RecipeExecutor";
 
+export {
+  ResearchManager,
+  type ResearchEventMap,
+  type AddPointsResult,
+} from "./ResearchManager";
+
