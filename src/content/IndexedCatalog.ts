@@ -6,6 +6,7 @@ import type {
   RecipeDef,
   ResearchNodeDef,
   ResourceDef,
+  SectorDef,
   UpgradeDef,
 } from "./defs";
 
@@ -31,6 +32,7 @@ export class IndexedCatalog {
   public readonly facilities: ReadonlyMap<string, FacilityDef>;
   public readonly upgrades: ReadonlyMap<string, UpgradeDef>;
   public readonly researchNodes: ReadonlyMap<string, ResearchNodeDef>;
+  public readonly sectors: ReadonlyMap<string, SectorDef>;
 
   public constructor(bundle: ContentBundle) {
     this.resources = new Map(bundle.resources.map((r) => [r.id, r]));
@@ -38,6 +40,7 @@ export class IndexedCatalog {
     this.facilities = new Map(bundle.facilities.map((f) => [f.id, f]));
     this.upgrades = new Map(bundle.upgrades.map((u) => [u.id, u]));
     this.researchNodes = new Map(bundle.researchNodes.map((n) => [n.id, n]));
+    this.sectors = new Map(bundle.sectors.map((s) => [s.id, s]));
   }
 
   /** returns a resource definition by ID, or undefined if not found */
@@ -64,6 +67,11 @@ export class IndexedCatalog {
   public getResearchNode(id: string): ResearchNodeDef | undefined {
     return this.researchNodes.get(id);
   }
+
+  /** returns a sector definition by ID, or undefined if not found */
+  public getSector(id: string): SectorDef | undefined {
+    return this.sectors.get(id);
+  }
 }
 
 /** checks each catalog for duplicate IDs and pushes an issue for each one found */
@@ -74,6 +82,7 @@ function checkDuplicateIds(bundle: ContentBundle, issues: SemanticIssue[]): void
     ["facilities", bundle.facilities],
     ["upgrades", bundle.upgrades],
     ["researchNodes", bundle.researchNodes],
+    ["sectors", bundle.sectors],
   ];
   for (const [name, items] of catalogs) {
     const seen = new Set<string>();
@@ -334,6 +343,33 @@ function checkCircularUnlocks(bundle: ContentBundle, issues: SemanticIssue[]): v
 }
 
 /**
+ * checks that every site template tag in every sector definition matches a tag
+ * declared in at least one facility's validSiteTags, ensuring each site type
+ * has at least one facility that can be built there
+ */
+function checkSectorSiteTagRefs(bundle: ContentBundle, issues: SemanticIssue[]): void {
+  const knownTags = new Set<string>();
+  for (const facility of bundle.facilities) {
+    for (const tag of facility.validSiteTags) {
+      knownTags.add(tag);
+    }
+  }
+  for (const sector of bundle.sectors) {
+    for (const template of sector.siteTemplates) {
+      for (const tag of template.tags) {
+        if (!knownTags.has(tag)) {
+          issues.push({
+            catalog: "sectors",
+            itemId: sector.id,
+            message: `site template "${template.templateId}" uses tag "${tag}" not found in any facility's validSiteTags`,
+          });
+        }
+      }
+    }
+  }
+}
+
+/**
  * validates a structurally correct ContentBundle for semantic consistency and returns either
  * an immutable IndexedCatalog or a list of accumulated SemanticIssues
  */
@@ -348,6 +384,7 @@ export function buildIndexedCatalog(bundle: ContentBundle): SemanticResult {
   checkResearchReachability(bundle, issues);
   checkResourceProducibility(bundle, issues);
   checkCircularUnlocks(bundle, issues);
+  checkSectorSiteTagRefs(bundle, issues);
   if (issues.length > 0) return { ok: false, issues };
   return { ok: true, catalog: new IndexedCatalog(bundle) };
 }

@@ -8,9 +8,11 @@ export type {
   FacilityDef,
   UpgradeDef,
   ResearchNodeDef,
+  SiteTemplateDef,
+  SectorDef,
+  SectorAccessState,
   ContentBundle,
-} from "./defs";
-export type { ValidationIssue } from "./validate";
+} from "./defs";export type { ValidationIssue } from "./validate";
 export type { RawCatalogs, LoadResult } from "./ContentLoader";
 export { ContentLoader, loadBundledContent } from "./ContentLoader";
 export type { SemanticIssue, SemanticResult } from "./IndexedCatalog";

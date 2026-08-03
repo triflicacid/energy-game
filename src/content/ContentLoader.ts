@@ -8,6 +8,7 @@ import recipesJson from "./fixtures/recipes.json";
 import facilitiesJson from "./fixtures/facilities.json";
 import upgradesJson from "./fixtures/upgrades.json";
 import researchJson from "./fixtures/research.json";
+import sectorsJson from "./fixtures/sectors.json";
 
 /** raw catalog inputs accepted by the loader — each field is unknown to enforce validation */
 export interface RawCatalogs {
@@ -16,6 +17,8 @@ export interface RawCatalogs {
   readonly facilities: unknown;
   readonly upgrades: unknown;
   readonly researchNodes: unknown;
+  /** optional; defaults to an empty array when omitted */
+  readonly sectors?: unknown;
 }
 
 /** discriminated union returned by the loader */
@@ -25,7 +28,7 @@ export type LoadResult =
 
 /** validates raw catalog data and returns typed definitions or a list of structural issues */
 export class ContentLoader {
-  /** validates all five catalogs and returns a bundle or accumulated issues */
+  /** validates all catalogs and returns a bundle or accumulated issues */
   public load(raw: RawCatalogs): LoadResult {
     const { bundle, issues } = validateBundle(
       raw.resources,
@@ -33,6 +36,7 @@ export class ContentLoader {
       raw.facilities,
       raw.upgrades,
       raw.researchNodes,
+      raw.sectors ?? [],
     );
     if (issues.length > 0) return { ok: false, issues };
     return { ok: true, bundle };
@@ -48,6 +52,9 @@ export function loadBundledContent(): LoadResult {
     facilities: facilitiesJson,
     upgrades: upgradesJson,
     researchNodes: researchJson,
+    sectors: sectorsJson,
   });
 }
+
+
 

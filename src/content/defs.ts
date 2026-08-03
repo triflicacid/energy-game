@@ -1,6 +1,39 @@
 // canonical content definition types used by the loading boundary and simulation
 
-import type { ResourceId } from "@shared/IdCounter";
+import type { BiomeId, ResourceId } from "@shared/IdCounter";
+
+/** progression states a sector moves through as the player expands */
+export type SectorAccessState =
+  | "unknown"
+  | "frontier"
+  | "explored"
+  | "surveyed"
+  | "unlocked"
+  | "buildable";
+
+/** a named construction site template within a sector definition */
+export interface SiteTemplateDef {
+  /** stable identifier for this site template within its parent sector */
+  readonly templateId: string;
+  /** facility site-type tags that determine which facilities may be built here */
+  readonly tags: readonly string[];
+}
+
+/** immutable definition of a map sector */
+export interface SectorDef {
+  readonly id: string;
+  readonly name: string;
+  /** biome or environment tag used for exploration/construction permission checks */
+  readonly biome: BiomeId;
+  /** shortest-path distance in sector-graph edges from the designated centre sector */
+  readonly distanceFromCentre: number;
+  /** site templates pre-defined in this sector */
+  readonly siteTemplates: readonly SiteTemplateDef[];
+  /** whether a starting town is generated in this sector on campaign initialisation */
+  readonly hasTown: boolean;
+  /** access state assigned to this sector when a new campaign is created */
+  readonly initialAccessState: SectorAccessState;
+}
 
 /** a quantity of a named resource used in recipes and construction costs */
 export interface ResourceRef {
@@ -73,5 +106,6 @@ export interface ContentBundle {
   readonly facilities: readonly FacilityDef[];
   readonly upgrades: readonly UpgradeDef[];
   readonly researchNodes: readonly ResearchNodeDef[];
+  readonly sectors: readonly SectorDef[];
 }
 

@@ -1,6 +1,7 @@
 // structural validators for content definition types
 
 import type { ResourceId } from "@shared/IdCounter";
+import { makeBiomeId } from "@shared/IdCounter";
 import type {
   ContentBundle,
   FacilityDef,
@@ -8,6 +9,9 @@ import type {
   ResearchNodeDef,
   ResourceDef,
   ResourceRef,
+  SectorAccessState,
+  SectorDef,
+  SiteTemplateDef,
   UpgradeDef,
 } from "./defs";
 
@@ -307,6 +311,7 @@ export function validateBundle(
   facilities: unknown,
   upgrades: unknown,
   researchNodes: unknown,
+  sectors: unknown = [],
 ): { bundle: ContentBundle; issues: readonly ValidationIssue[] } {
   const issues: ValidationIssue[] = [];
   const bundle: ContentBundle = {
@@ -315,7 +320,87 @@ export function validateBundle(
     facilities: validateCatalog(facilities, "facilities", validateFacilityDef, issues),
     upgrades: validateCatalog(upgrades, "upgrades", validateUpgradeDef, issues),
     researchNodes: validateCatalog(researchNodes, "researchNodes", validateResearchNodeDef, issues),
+    sectors: validateCatalog(sectors, "sectors", validateSectorDef, issues),
   };
   return { bundle, issues };
+}
+
+const VALID_ACCESS_STATES: ReadonlySet<string> = new Set<SectorAccessState>([
+  "unknown",
+  "frontier",
+  "explored",
+  "surveyed",
+  "unlocked",
+  "buildable",
+]);
+
+/** validates one raw site template entry within a sector definition */
+export function validateSiteTemplateDef(
+  raw: unknown,
+  catalog: string,
+  index: number,
+  issues: ValidationIssue[],
+  sectorId: string | null,
+  templateIndex: number,
+): SiteTemplateDef | null {
+  const o = asRecord(raw);
+  if (!o) {
+    issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `siteTemplates[${templateIndex}]`, message: "must be an object" });
+    return null;
+  }
+  const templateId = readStr(o, "templateId");
+  if (!templateId) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `siteTemplates[${templateIndex}].templateId`, message: "must be a non-empty string" });
+  const tags = readStringArray(o, "tags", issues, catalog, index, sectorId);
+  if (!templateId || !tags) return null;
+  return { templateId, tags };
+}
+
+/** validates one raw sector definition entry, accumulating issues and returning the typed def or null */
+export function validateSectorDef(
+  raw: unknown,
+  catalog: string,
+  index: number,
+  issues: ValidationIssue[],
+): SectorDef | null {
+  const o = asRecord(raw);
+  if (!o) {
+    issues.push({ catalog, itemIndex: index, itemId: null, path: "", message: "must be an object" });
+    return null;
+  }
+  const id = readStr(o, "id");
+  if (!id) issues.push({ catalog, itemIndex: index, itemId: null, path: "id", message: "must be a non-empty string" });
+  const name = readStr(o, "name");
+  if (!name) issues.push({ catalog, itemIndex: index, itemId: id, path: "name", message: "must be a non-empty string" });
+  const biome = readStr(o, "biome");
+  if (!biome) issues.push({ catalog, itemIndex: index, itemId: id, path: "biome", message: "must be a non-empty string" });
+  const distanceFromCentre = readNum(o, "distanceFromCentre", false);
+  if (distanceFromCentre === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "distanceFromCentre", message: "must be a finite non-negative number" });
+  const hasTown = readBool(o, "hasTown");
+  if (hasTown === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "hasTown", message: "must be a boolean" });
+
+  const rawAccess = o["initialAccessState"];
+  let initialAccessState: SectorAccessState | null = null;
+  if (typeof rawAccess !== "string" || !VALID_ACCESS_STATES.has(rawAccess)) {
+    issues.push({ catalog, itemIndex: index, itemId: id, path: "initialAccessState", message: `must be one of: ${[...VALID_ACCESS_STATES].join(", ")}` });
+  } else {
+    initialAccessState = rawAccess as SectorAccessState;
+  }
+
+  const rawTemplates = o["siteTemplates"];
+  let siteTemplates: SiteTemplateDef[] | null = null;
+  if (!Array.isArray(rawTemplates)) {
+    issues.push({ catalog, itemIndex: index, itemId: id, path: "siteTemplates", message: "must be an array" });
+  } else {
+    siteTemplates = [];
+    let ok = true;
+    for (let i = 0; i < rawTemplates.length; i++) {
+      const t = validateSiteTemplateDef(rawTemplates[i], catalog, index, issues, id, i);
+      if (t === null) { ok = false; } else { siteTemplates.push(t); }
+    }
+    if (!ok) siteTemplates = null;
+  }
+
+  if (!id || !name || !biome || distanceFromCentre === null || hasTown === null || !initialAccessState || !siteTemplates) return null;
+  return { id, name, biome: makeBiomeId(biome), distanceFromCentre, siteTemplates, hasTown, initialAccessState };
 }
 

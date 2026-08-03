@@ -24,6 +24,9 @@ export type ConstructionJobId = Brand<string, "ConstructionJobId">;
 /** stable identifier for a content-defined resource, sourced from ResourceDef.id */
 export type ResourceId = Brand<string, "ResourceId">;
 
+/** stable identifier for a content-defined biome, sourced from BiomeDef or sector fixture data */
+export type BiomeId = Brand<string, "BiomeId">;
+
 /** counter-based runtime ID generator; state is serializable for save and load */
 export class IdCounter {
   private count: number;
@@ -81,5 +84,10 @@ export function makeConstructionJobId(counter: IdCounter): ConstructionJobId {
 /** wraps a validated content string as a ResourceId */
 export function makeResourceId(id: string): ResourceId {
   return id as ResourceId;
+}
+
+/** wraps a validated content string as a BiomeId */
+export function makeBiomeId(id: string): BiomeId {
+  return id as BiomeId;
 }
 
