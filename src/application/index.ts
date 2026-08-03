@@ -2,6 +2,7 @@
 // not imported by simulation, content, or generation
 
 import { EventBus } from "@shared/EventBus";
+import type { Disposable } from "@shared/Disposable";
 import {
   SimulationClock,
   type SimClockEventMap,
@@ -22,7 +23,7 @@ export const MS_PER_TICK_AT_SPEED_1 = 1_000;
  * read clock state directly; they must not publish on the bus or mutate
  * simulation state.
  */
-export class Application {
+export class Application implements Disposable {
   private readonly bus: EventBus<AppEventMap>;
   private readonly frameLoop: FrameLoopController;
   private readonly clock: SimulationClock;

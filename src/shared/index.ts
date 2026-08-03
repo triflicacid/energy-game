@@ -63,3 +63,4 @@ export {
 export type { RngState } from "./Rng";
 export { Rng, seedFromString } from "./Rng";
 export type { JsonSerializable } from "./JsonSerializable";
+export type { Disposable } from "./Disposable";

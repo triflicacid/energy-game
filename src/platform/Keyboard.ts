@@ -1,4 +1,5 @@
 import type { KeyboardEventSource } from "./KeyboardEventSource";
+import type { Disposable } from "@shared/Disposable";
 
 export type KeyboardKeyDownListener = (event: KeyboardEvent, key: string, doubleTap: boolean) => void;
 export type KeyboardKeyUpListener = (event: KeyboardEvent, key: string) => void;
@@ -22,7 +23,7 @@ type KeyDownSubscription = {
  * tracks keyboard state from a window-like event source and exposes query and subscription APIs.
  * key matching is case-sensitive by default.
  */
-export class Keyboard {
+export class Keyboard implements Disposable {
   private readonly pressedKeys = new Set<string>();
   private readonly lastKeyUpTime = new Map<string, number>();
   private readonly keyDownListeners = new Set<KeyboardKeyDownListener>();
@@ -136,4 +137,6 @@ export class Keyboard {
     return left === right;
   }
 }
+
+
 

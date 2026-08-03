@@ -1,3 +1,5 @@
+import type { Disposable } from "./Disposable";
+
 /** maps event names to payload types */
 export type EventMap = Record<string, unknown>;
 
@@ -20,7 +22,7 @@ type QueuedEvent = {
 };
 
 /** type-safe event bus; events published during delivery are queued and delivered after the current batch */
-export class EventBus<TMap extends object> {
+export class EventBus<TMap extends object> implements Disposable {
   private readonly listeners = new Map<string, Set<Listener<unknown>>>();
   private readonly queue: QueuedEvent[] = [];
   private delivering = false;

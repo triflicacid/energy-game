@@ -1,6 +1,7 @@
 // canvas map renderer; reads simulation state, must not mutate it
 
 import type { Application } from "@application";
+import type { Disposable } from "@shared/Disposable";
 
 /**
  * minimal canvas renderer shell.
@@ -8,7 +9,7 @@ import type { Application } from "@application";
  * subscribes to tick:after so the canvas is redrawn whenever the simulation
  * advances.  full sector/sprite rendering will be implemented in U01.
  */
-export class CanvasRenderer {
+export class CanvasRenderer implements Disposable {
   private readonly ctx: CanvasRenderingContext2D;
   private readonly unsubscribeTick: () => void;
 

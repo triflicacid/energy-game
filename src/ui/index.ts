@@ -4,6 +4,7 @@
 import type { Application } from "@application";
 import { SPEED_MULTIPLIERS, type SpeedMultiplier } from "@simulation/SimulationClock";
 import { Keyboard } from "@platform/Keyboard";
+import type { Disposable } from "@shared/Disposable";
 import iconPause from "./icon-pause.svg?raw";
 import iconResume from "./icon-resume.svg?raw";
 
@@ -12,7 +13,7 @@ import iconResume from "./icon-resume.svg?raw";
  * subscribes to clock events for invalidation; no animation-frame polling.
  * full panels and research display will be added in U02.
  */
-export class UiShell {
+export class UiShell implements Disposable {
   private readonly container: HTMLElement;
   private readonly tickDisplay: HTMLElement;
   private readonly fpsDisplay: HTMLElement;
