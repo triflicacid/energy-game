@@ -3,6 +3,7 @@
 
 import type { Application } from "@application";
 import { SPEED_MULTIPLIERS, type SpeedMultiplier } from "@simulation/SimulationClock";
+import { Keyboard } from "@platform/Keyboard";
 import iconPause from "./icon-pause.svg?raw";
 import iconResume from "./icon-resume.svg?raw";
 
@@ -17,9 +18,11 @@ export class UiShell {
   private readonly fpsDisplay: HTMLElement;
   private readonly pauseBtn: HTMLButtonElement;
   private readonly speedBtns: Map<SpeedMultiplier, HTMLButtonElement> = new Map();
+  private readonly keyboard: Keyboard;
   private readonly unsubscribePaused: () => void;
   private readonly unsubscribeResumed: () => void;
   private readonly unsubscribeTick: () => void;
+  private readonly unsubscribeSpace: () => void;
 
   public constructor(private readonly app: Application) {
     this.container = this.buildControls();
@@ -42,6 +45,18 @@ export class UiShell {
 
     this.syncPauseButton(app.getClock().isPaused());
     this.setActiveSpeedBtn(1);
+
+    this.keyboard = new Keyboard(window);
+    this.unsubscribeSpace = this.keyboard.onKeyDownForKey(" ", (event) => {
+      // prevent page scroll; only toggle when focus is not in a text input
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+      event.preventDefault();
+      if (app.getClock().isPaused()) {
+        app.resume();
+      } else {
+        app.pause();
+      }
+    });
   }
 
   /** removes event subscriptions and detaches the toolbar from the DOM */
@@ -49,6 +64,8 @@ export class UiShell {
     this.unsubscribePaused();
     this.unsubscribeResumed();
     this.unsubscribeTick();
+    this.unsubscribeSpace();
+    this.keyboard.dispose();
     this.container.remove();
   }
 
