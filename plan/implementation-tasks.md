@@ -127,7 +127,11 @@ F00
          │           └─ ✅ U01di reservoir visual variants
          │               └─ ✅ U01dii town visual variants
          │                   └─ U01e (remainder) interaction rendering (+ U02)
-         └─ U02 HTML status/build/research UI (+ S02 + S03 + V01 + C02 + A01)
+         └─ U02a read-only HTML panels (+ S02 + S03 + C02 + M00)
+             ├─ U02a-1 inventory panel
+             ├─ U02a-2 sector/site/facility detail panel
+             └─ U02a-3 research panel
+                 └─ U02 build controls + research assignment (+ V01 + A01)
 
 E00 + V02
  └─ E01 dynamo and first electricity
@@ -674,22 +678,94 @@ Integrate a tested scenario:
 
 **Acceptance (remaining):** transform round trips and hit tests are unit tested across zoom/DPR values; highlights align to gameplay footprints, update with eligibility, and disappear on mode exit; invalid cells are not highlighted; rendering remains deterministic for equal scene and viewport state.
 
-## U02 — Initial HTML UI
+## U02a — Read-only HTML panels
 
-**Depends on:** U00, S02, S03, V01, C02, A01
+Time controls already exist (`UiShell`). The remaining read-only portions of `U02` do not
+require `V01` or `A01`: the current two inventory resources already have real icons (from
+`A00`), and inventory/sector/research state is already readable through `Application`. What
+they cannot do without further work is let the player build anything — there is no typed
+application method yet to place a facility at a site and consume its construction cost, and
+no facility-state field recording which research node a facility targets. That capability is
+not currently its own task anywhere in this plan; `U02`'s remaining build-control and
+research-assignment deliverables stay blocked on it rather than on `V01`/`A01`.
+
+`U02a` is split into three independent sub-tasks so each panel can be implemented and reviewed
+on its own. They may be done in any order; none depends on the others.
+
+### U02a-1 — Inventory panel
+
+**Depends on:** U00, S02, C02
 
 **Deliverables:**
 
-- Time controls.
-- Global company-inventory display with resolved resource icon, localized label, quantity, and unit for every row.
-- Selected sector/site/facility details.
-- Minimal build controls.
-- Minimal research list or graph using HTML controls; SVG may draw dependency edges.
-- Per-facility research assignment control (select which node a workshop targets).
-- Global research assignment shortcut: reassign all facilities to the same node in one action; implemented as a UI iteration over facility assignments, not a change to `ResearchManager`.
-- Keyboard focus and modal/panel behavior.
+- One HTML panel listing every non-zero company-inventory resource: resolved icon, label,
+  quantity, and unit per row.
+- Icons resolve through the existing world atlas (the same sheet the canvas already loads) via
+  a small UI-layer icon-resolution helper; no second icon-loading pipeline.
+- A missing/unresolvable icon shows a clear visual placeholder, never a blank.
+- Localized labels are deferred — no localization catalog exists yet; a readable placeholder
+  derived from the resource ID is acceptable until one does.
 
-**Acceptance:** normal buttons are keyboard accessible; typing/focus does not trigger map shortcuts; UI updates from events/read-only state without polling every animation frame; missing resource icons fail validation or show a clear development diagnostic rather than a blank; no warehouse or sector-inventory panel exists.
+**Acceptance:** panel updates from campaign-state/events, not per-animation-frame polling; every
+current inventory resource (`timber`, `wood-waste`) renders its real icon; an unresolvable
+iconId is visibly flagged rather than silently blank; no warehouse or sector-inventory panel is
+introduced.
+
+### U02a-2 — Sector/site/facility detail panel
+
+**Depends on:** U00, C02, M00
+
+**Deliverables:**
+
+- Read-only summary of the (currently single) sector: name, biome, access state, distance, and
+  its `C02` natural-resource definition values (innate woodland/water capacity and initial
+  stock, finite reserves) where present.
+- A list of the sector's sites, each independently selectable through a normal focusable
+  control (not a canvas click — spatial hit-testing is `U01e`'s job and is not a dependency
+  here).
+- Selecting a site shows its tags and, if a facility exists there, the facility's definition
+  details; otherwise a clear "no facility built" state.
+- No build/placement controls — this panel is display-only.
+
+**Acceptance:** normal controls are keyboard accessible; selection state is internal to the
+panel, not read from or written to canvas/camera state; panel reflects real `CampaignState`
+rather than fixture-only data; no facility can be created or modified from this panel.
+
+### U02a-3 — Research panel
+
+**Depends on:** U00, S03
+
+**Deliverables:**
+
+- Read-only list of research nodes (grouped by era), each showing completed / available /
+  locked status derived from `state.research` and the node's prerequisites.
+- In-progress nodes show accumulated progress against their cost.
+- No per-facility assignment control and no global-assignment shortcut — both require
+  facility-state that does not exist yet (see above) and remain with `U02`.
+
+**Acceptance:** status classification matches `ResearchManager`'s own prerequisite rules with no
+duplicated/hard-coded node IDs; panel updates from events/read-only state, not polling.
+
+## U02 — Build controls and research assignment
+
+**Depends on:** U02a, V01, A01
+
+**Deliverables:**
+
+- Minimal build controls: select a facility and a valid site, trigger construction. Requires a
+  new typed application construction capability (site placement + inventory consumption) that
+  is not yet designed anywhere in this plan; scope that capability before implementing this UI.
+- Per-facility research assignment control (select which node a workshop targets). Requires the
+  facility-state assignment field described in `S03`'s assignment model, which does not exist
+  in `FacilitySerialState` yet.
+- Global research assignment shortcut: reassign all facilities to the same node in one action;
+  implemented as a UI iteration over facility assignments, not a change to `ResearchManager`.
+- Keyboard focus and modal/panel behavior for any new dialogs this introduces.
+
+**Acceptance:** normal buttons are keyboard accessible; typing/focus does not trigger map
+shortcuts; UI updates from events/read-only state without polling every animation frame; no
+warehouse or sector-inventory panel exists; construction cannot bypass the single company
+inventory or create a facility without a valid site.
 
 # Phase E: first electricity and contract
 
