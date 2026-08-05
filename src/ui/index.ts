@@ -9,6 +9,13 @@ import iconPause from "./icon-pause.svg?raw";
 import iconResume from "./icon-resume.svg?raw";
 
 export { InventoryPanel } from "./InventoryPanel";
+export { InventoryModal } from "./InventoryModal";
+export {
+  collectInventoryRows,
+  sortInventoryRows,
+  type InventoryRow,
+  type InventorySortMode,
+} from "./InventoryRows";
 export { getDock, type DockSide } from "./Dock";
 export { hasIcon, resolveIconStyle, type ResolvedIconStyle } from "./IconResolver";
 

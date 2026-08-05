@@ -1,40 +1,42 @@
-// read-only HTML panel listing the single company-wide inventory
+// read-only HTML panel listing the top of the company-wide inventory
 // reads Application/CampaignState; never mutates simulation state
+// activating the card opens the full sortable inventory (InventoryModal)
 
 import type { Application } from "@application";
-import type { ResourceDef } from "@content";
 import type { Disposable } from "@shared/Disposable";
 import { getDock } from "./Dock";
-import { hasIcon, resolveIconStyle } from "./IconResolver";
+import { InventoryModal } from "./InventoryModal";
+import { buildInventoryEmptyEl, buildInventoryRowEl, collectInventoryRows, sortInventoryRows } from "./InventoryRows";
 
-/** derives a readable placeholder label from a resource id; real localization lands later */
-function placeholderLabel(resourceId: string): string {
-  return resourceId
-    .split("-")
-    .filter((word) => word.length > 0)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
-/** trims float noise for display without implying false precision */
-function formatQuantity(qty: number): string {
-  return (Math.round(qty * 100) / 100).toLocaleString();
-}
+const DOCKED_ROW_LIMIT = 10;
 
 /**
  * read-only company-inventory panel.
- * lists every resource currently held in non-zero quantity: icon, label, quantity, unit.
+ * lists the top 10 resources by quantity: icon, label, quantity, unit.
  * updates from `tick:after`, never per-animation-frame polling.
+ * the whole card is not a <button> but behaves like one (role, tabindex, Enter/Space) and opens
+ * the full sortable inventory in `InventoryModal`.
  */
 export class InventoryPanel implements Disposable {
   private readonly panel: HTMLElement;
   private readonly list: HTMLElement;
+  private readonly hint: HTMLElement;
+  private readonly modal: InventoryModal;
   private readonly unsubscribeTick: () => void;
 
   public constructor(private readonly app: Application) {
     this.panel = document.createElement("section");
-    this.panel.classList.add("panel", "inventory-panel");
-    this.panel.setAttribute("aria-label", "inventory");
+    this.panel.classList.add("panel", "inventory-panel", "panel--clickable");
+    this.panel.setAttribute("role", "button");
+    this.panel.setAttribute("tabindex", "0");
+    this.panel.setAttribute("aria-haspopup", "dialog");
+    this.panel.setAttribute("aria-label", "Inventory — view all");
+    this.panel.addEventListener("click", () => this.modal.open());
+    this.panel.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      this.modal.open();
+    });
 
     const heading = document.createElement("h2");
     heading.classList.add("panel-heading");
@@ -45,7 +47,13 @@ export class InventoryPanel implements Disposable {
     this.list.classList.add("inventory-list");
     this.panel.appendChild(this.list);
 
+    this.hint = document.createElement("p");
+    this.hint.classList.add("inventory-hint");
+    this.panel.appendChild(this.hint);
+
     getDock(app, "dock-right").appendChild(this.panel);
+
+    this.modal = new InventoryModal(app);
 
     this.render();
     this.unsubscribeTick = app.getEvents().subscribe("tick:after", () => {
@@ -53,63 +61,23 @@ export class InventoryPanel implements Disposable {
     });
   }
 
-  /** unsubscribes from clock events and detaches the panel from the DOM */
+  /** unsubscribes from clock events, disposes the modal, and detaches the panel from the DOM */
   public dispose(): void {
     this.unsubscribeTick();
+    this.modal.dispose();
     this.panel.remove();
   }
 
   private render(): void {
-    const { quantities } = this.app.getCampaignState().inventory;
-    const catalog = this.app.getCatalog();
+    const rows = sortInventoryRows(collectInventoryRows(this.app), "qty-desc");
+    const shown = rows.slice(0, DOCKED_ROW_LIMIT);
 
-    const rows = Object.entries(quantities)
-      .filter(([, qty]) => qty !== 0)
-      .sort(([a], [b]) => a.localeCompare(b));
-
-    this.list.replaceChildren(...rows.map(([resourceId, qty]) => this.buildRow(resourceId, qty, catalog.getResource(resourceId))));
-
+    this.list.replaceChildren(...shown.map(buildInventoryRowEl));
     if (rows.length === 0) {
-      const empty = document.createElement("li");
-      empty.classList.add("inventory-empty");
-      empty.textContent = "No resources in inventory.";
-      this.list.appendChild(empty);
+      this.list.appendChild(buildInventoryEmptyEl());
     }
-  }
 
-  private buildRow(resourceId: string, qty: number, resource: ResourceDef | undefined): HTMLElement {
-    const row = document.createElement("li");
-    row.classList.add("inventory-row");
-    row.appendChild(this.buildIcon(resource));
-
-    const label = document.createElement("span");
-    label.classList.add("inventory-label");
-    label.textContent = placeholderLabel(resource?.id ?? resourceId);
-    row.appendChild(label);
-
-    const qtyEl = document.createElement("span");
-    qtyEl.classList.add("inventory-qty");
-    qtyEl.textContent = resource ? `${formatQuantity(qty)} ${resource.unit}` : formatQuantity(qty);
-    row.appendChild(qtyEl);
-
-    return row;
-  }
-
-  /** returns the icon element for a row: the resolved sprite crop, or a visible placeholder */
-  private buildIcon(resource: ResourceDef | undefined): HTMLElement {
-    const icon = document.createElement("span");
-    icon.classList.add("inventory-icon");
-
-    if (resource !== undefined && hasIcon(resource.iconId)) {
-      Object.assign(icon.style, resolveIconStyle(resource.iconId));
-      icon.setAttribute("role", "img");
-      icon.setAttribute("aria-label", resource.id);
-    } else {
-      icon.classList.add("inventory-icon--missing");
-      icon.setAttribute("role", "img");
-      icon.setAttribute("aria-label", "missing icon");
-      icon.textContent = "?";
-    }
-    return icon;
+    this.hint.textContent =
+      rows.length > shown.length ? `Showing ${shown.length} of ${rows.length} — click to view all` : "Click to view all";
   }
 }
