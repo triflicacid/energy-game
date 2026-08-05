@@ -68,3 +68,87 @@ html, body {
     opacity: 0.6;
 }
 
+.dock {
+    position: absolute;
+    top: 48px;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    overflow-y: auto;
+    pointer-events: none;
+}
+
+.dock--dock-left {
+    left: 0;
+}
+
+.dock--dock-right {
+    right: 0;
+}
+
+.panel {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.65);
+    color: #e0e0e0;
+    font: 13px/1.4 monospace;
+    border-radius: 4px;
+    padding: 8px 10px;
+    min-width: 200px;
+}
+
+.panel-heading {
+    margin: 0 0 6px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+}
+
+.inventory-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.inventory-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.inventory-icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    image-rendering: pixelated;
+}
+
+.inventory-icon--missing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(220, 60, 60, 0.25);
+    border: 1px dashed #dc3c3c;
+    color: #dc3c3c;
+    font-weight: bold;
+}
+
+.inventory-label {
+    flex: 1 1 auto;
+}
+
+.inventory-qty {
+    flex: none;
+    opacity: 0.85;
+}
+
+.inventory-empty {
+    opacity: 0.6;
+    font-style: italic;
+}
+

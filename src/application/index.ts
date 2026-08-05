@@ -13,6 +13,7 @@ import { loadBundledContent } from "@content/ContentLoader";
 import { buildIndexedCatalog, type IndexedCatalog } from "@content/IndexedCatalog";
 import { createCampaignState, type CampaignState, type ReadonlyCampaignState } from "@simulation/CampaignState";
 import initialCentreMapJson from "@simulation/fixtures/initial-centre-map.json";
+import initialInventoryJson from "@simulation/fixtures/initial-inventory.json";
 
 /** merged event map for the application bus; grows as subsystems are added */
 export type AppEventMap = SimClockEventMap;
@@ -74,6 +75,15 @@ export class Application implements Disposable {
       sites: initialCentreMap.idCounters.sites,
       towns: initialCentreMap.idCounters.towns,
     };
+
+    // Starting inventory is data-driven, same as the centre-map bootstrap above.
+    const initialInventory = initialInventoryJson as { readonly quantities: Readonly<Record<string, number>> };
+    for (const resourceId of Object.keys(initialInventory.quantities)) {
+      if (!this.catalog.getResource(resourceId)) {
+        throw new Error(`initial-inventory.json references unknown resource "${resourceId}"`);
+      }
+    }
+    this.campaignState.inventory = JSON.parse(JSON.stringify(initialInventory)) as CampaignState["inventory"];
   }
 
   /** returns the canvas element this application renders into */

@@ -9,6 +9,13 @@ export {
 } from "./ReservoirAutotile";
 
 export { AtlasLoader, type AtlasLoadState, type ImageFactory, type LoadableImage } from "./AtlasLoader";
+export {
+  WORLD_SPRITES,
+  ATLAS_WIDTH,
+  ATLAS_HEIGHT,
+  type WorldSpriteId,
+  type AtlasSpriteDescriptor,
+} from "./generated/world-atlas";
 export { WorldAtlasPainter, MISSING_SPRITE_COLOR } from "./WorldAtlasPainter";
 export { CanvasRenderer, WORLD_ATLAS_URL, CELL_SIZE, MAX_ZOOM, resizeBackingBuffer } from "./CanvasRenderer";
 export { type SceneCell, type WorldScene } from "./WorldScene";
