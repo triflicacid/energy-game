@@ -11,7 +11,6 @@ import type {
   ResourceRef,
   SectorAccessState,
   SectorDef,
-  SiteTemplateDef,
   UpgradeDef,
 } from "./defs";
 
@@ -53,12 +52,6 @@ function readNum(o: Record<string, unknown>, f: string, positive: boolean): numb
   if (typeof v !== "number" || !Number.isFinite(v) || v < 0) return null;
   if (positive && v === 0) return null;
   return v as number;
-}
-
-/** reads any finite number from an object, including negative values; returns null if absent or non-finite */
-function readFiniteNum(o: Record<string, unknown>, f: string): number | null {
-  const v = o[f];
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
 /** reads a finite integer from an object, including negative values; returns null if absent, non-finite, or fractional */
@@ -217,7 +210,8 @@ export function validateFacilityDef(
   if (!id) issues.push({ catalog, itemIndex: index, itemId: null, path: "id", message: "must be a non-empty string" });
   const behaviorId = readStr(o, "behaviorId");
   if (!behaviorId) issues.push({ catalog, itemIndex: index, itemId: id, path: "behaviorId", message: "must be a non-empty string" });
-  const validSiteTags = readStringArray(o, "validSiteTags", issues, catalog, index, id);
+  const placementRuleId = readStr(o, "placementRuleId");
+  if (!placementRuleId) issues.push({ catalog, itemIndex: index, itemId: id, path: "placementRuleId", message: "must be a non-empty string" });
   const constructionCost = readResourceRefArray(o, "constructionCost", issues, catalog, index, id);
   const constructionMoneyBase = readNum(o, "constructionMoneyBase", false);
   if (constructionMoneyBase === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "constructionMoneyBase", message: "must be a finite non-negative number" });
@@ -228,11 +222,11 @@ export function validateFacilityDef(
   const upgradeIds = readStringArray(o, "upgradeIds", issues, catalog, index, id);
   const capabilities = readStringArray(o, "capabilities", issues, catalog, index, id);
 
-  if (!id || !behaviorId || !validSiteTags || !constructionCost || constructionMoneyBase === null || constructionTimeHours === null || !requiredResearch || !recipeIds || !upgradeIds || !capabilities) return null;
+  if (!id || !behaviorId || !placementRuleId || !constructionCost || constructionMoneyBase === null || constructionTimeHours === null || !requiredResearch || !recipeIds || !upgradeIds || !capabilities) return null;
   // spriteId is optional; present only for facilities with authored sprites
   const rawSprite = o["spriteId"];
   const spriteId = typeof rawSprite === "string" && rawSprite.trim().length > 0 ? rawSprite : undefined;
-  return { id, behaviorId, validSiteTags, constructionCost, constructionMoneyBase, constructionTimeHours, requiredResearch, recipeIds, upgradeIds, capabilities, ...(spriteId !== undefined ? { spriteId } : {}) };
+  return { id, behaviorId, placementRuleId, constructionCost, constructionMoneyBase, constructionTimeHours, requiredResearch, recipeIds, upgradeIds, capabilities, ...(spriteId !== undefined ? { spriteId } : {}) };
 }
 
 /** validates one raw upgrade entry, accumulating issues and returning the typed def or null */
@@ -349,31 +343,6 @@ const VALID_ACCESS_STATES: ReadonlySet<string> = new Set<SectorAccessState>([
   "buildable",
 ]);
 
-/** validates one raw site template entry within a sector definition */
-export function validateSiteTemplateDef(
-  raw: unknown,
-  catalog: string,
-  index: number,
-  issues: ValidationIssue[],
-  sectorId: string | null,
-  templateIndex: number,
-): SiteTemplateDef | null {
-  const o = asRecord(raw);
-  if (!o) {
-    issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `siteTemplates[${templateIndex}]`, message: "must be an object" });
-    return null;
-  }
-  const templateId = readStr(o, "templateId");
-  if (!templateId) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `siteTemplates[${templateIndex}].templateId`, message: "must be a non-empty string" });
-  const tags = readStringArray(o, "tags", issues, catalog, index, sectorId);
-  const x = readFiniteNum(o, "x");
-  if (x === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `siteTemplates[${templateIndex}].x`, message: "must be a finite number" });
-  const y = readFiniteNum(o, "y");
-  if (y === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `siteTemplates[${templateIndex}].y`, message: "must be a finite number" });
-  if (!templateId || !tags || x === null || y === null) return null;
-  return { templateId, tags, x, y };
-}
-
 /** validates one raw sector definition entry, accumulating issues and returning the typed def or null */
 export function validateSectorDef(
   raw: unknown,
@@ -411,21 +380,7 @@ export function validateSectorDef(
     initialAccessState = rawAccess as SectorAccessState;
   }
 
-  const rawTemplates = o["siteTemplates"];
-  let siteTemplates: SiteTemplateDef[] | null = null;
-  if (!Array.isArray(rawTemplates)) {
-    issues.push({ catalog, itemIndex: index, itemId: id, path: "siteTemplates", message: "must be an array" });
-  } else {
-    siteTemplates = [];
-    let ok = true;
-    for (let i = 0; i < rawTemplates.length; i++) {
-      const t = validateSiteTemplateDef(rawTemplates[i], catalog, index, issues, id, i);
-      if (t === null) { ok = false; } else { siteTemplates.push(t); }
-    }
-    if (!ok) siteTemplates = null;
-  }
-
-  if (!id || !name || !biome || distanceFromCentre === null || diameter === null || gridQ === null || gridR === null || hasTown === null || !initialAccessState || !siteTemplates) return null;
-  return { id, name, biome: makeBiomeId(biome), distanceFromCentre, diameter, gridQ, gridR, siteTemplates, hasTown, initialAccessState };
+  if (!id || !name || !biome || distanceFromCentre === null || diameter === null || gridQ === null || gridR === null || hasTown === null || !initialAccessState) return null;
+  return { id, name, biome: makeBiomeId(biome), distanceFromCentre, diameter, gridQ, gridR, hasTown, initialAccessState };
 }
 

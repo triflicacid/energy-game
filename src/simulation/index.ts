@@ -29,19 +29,23 @@ export {
   type ResearchProgressState,
   type CellSerialState,
   type TownVisualTier,
-  type TownPresentationCellSerialState,
-  type ReservoirPresentationCellSerialState,
-  type PresentationCellSerialState,
+  type FeatureDimensionsSerialState,
+  type WoodlandFeatureSerialState,
+  type FacilityFeatureSerialState,
+  type TownFeatureSerialState,
+  type ReservoirFeatureSerialState,
+  type SectorFeatureSerialState,
   type SectorSerialState,
   type TownSerialState,
-  type SiteSerialState,
   type FacilitySerialState,
   type ContractSerialState,
 } from "./CampaignState";
 
 export {
   createCentreSector,
+  validateCentreMap,
   CentreSectorError,
+  type CentreMapFixture,
 } from "./CentreSector";
 
 export {

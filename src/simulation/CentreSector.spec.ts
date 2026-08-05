@@ -3,15 +3,31 @@ import { buildIndexedCatalog, loadBundledContent } from "@content";
 import type { IndexedCatalog } from "@content";
 import { createCampaignState } from "./CampaignState";
 import type { CampaignState } from "./CampaignState";
-import { createCentreSector } from "./CentreSector";
+import { CentreSectorError, createCentreSector, validateCentreMap } from "./CentreSector";
+import initialCentreMapJson from "./fixtures/initial-centre-map.json";
 
-// load and validate the real bundled content once for all tests
 function loadCatalog(): IndexedCatalog {
   const load = loadBundledContent();
   if (!load.ok) throw new Error(`content load failed: ${JSON.stringify(load.issues)}`);
   const result = buildIndexedCatalog(load.bundle);
   if (!result.ok) throw new Error(`catalog build failed: ${JSON.stringify(result.issues)}`);
   return result.catalog;
+}
+
+type MutableFixture = {
+  idCounters: Record<string, number>;
+  sectors: Record<string, {
+    id: string;
+    definitionId: string;
+    accessState: string;
+    features: Record<string, unknown>[];
+  }>;
+  towns: Record<string, { id: string; sectorId: string }>;
+  facilities: Record<string, { id: string; sectorId: string; definitionId: string }>;
+};
+
+function mutableFixture(): MutableFixture {
+  return structuredClone(initialCentreMapJson) as unknown as MutableFixture;
 }
 
 describe("createCentreSector", () => {
@@ -38,37 +54,6 @@ describe("createCentreSector", () => {
     createCentreSector(state, catalog);
     const sector = Object.values(state.sectors)[0];
     expect(sector?.accessState).toBe("buildable");
-  });
-
-  it("adds a forest site and a waterwheel site", () => {
-    createCentreSector(state, catalog);
-    const allTags = Object.values(state.sites).flatMap((s) => s.tags);
-    expect(allTags).toContain("forest");
-    expect(allTags).toContain("waterwheel-site");
-  });
-
-  it("sites belonging to the sector are discoverable from top-level site state", () => {
-    createCentreSector(state, catalog);
-    const sector = Object.values(state.sectors)[0];
-    if (!sector) throw new Error("sector missing");
-    const sectorSites = Object.values(state.sites).filter(site => site.sectorId === sector.id);
-    expect(sectorSites).toHaveLength(Object.keys(state.sites).length);
-  });
-
-  it("each site references the sector id", () => {
-    createCentreSector(state, catalog);
-    const sectorId = Object.keys(state.sectors)[0];
-    if (!sectorId) throw new Error("sector id missing");
-    for (const site of Object.values(state.sites)) {
-      expect(site.sectorId).toBe(sectorId);
-    }
-  });
-
-  it("each site has no facility assigned initially", () => {
-    createCentreSector(state, catalog);
-    for (const site of Object.values(state.sites)) {
-      expect(site.facilityId).toBeNull();
-    }
   });
 
   it("adds exactly one town", () => {
@@ -101,70 +86,168 @@ describe("createCentreSector", () => {
     expect(sectorTownIds).toContain(townId);
   });
 
-  it("generates data-driven town presentation cells on the sector", () => {
+  it("places the town through a sector feature", () => {
     createCentreSector(state, catalog);
     const sector = Object.values(state.sectors)[0];
     const townId = Object.keys(state.towns)[0];
     if (!sector) throw new Error("sector missing");
     if (!townId) throw new Error("town missing");
-    const townCells = sector.presentationCells.filter(c => c.kind === "town");
-    expect(townCells).toHaveLength(1);
-    expect(townCells[0]).toMatchObject({ kind: "town", townId, col: 6, row: 6, tier: 1 });
+    const townFeatures = sector.features.filter(feature => feature.kind === "town");
+    expect(townFeatures).toHaveLength(1);
+    expect(townFeatures[0]).toMatchObject({
+      id: "feature:2",
+      kind: "town",
+      townId,
+      origin: { col: 6, row: 6 },
+      tier: 1,
+    });
   });
 
-  it("generates data-driven reservoir presentation cells on the sector", () => {
+  it("groups the reservoir cells into one identified feature", () => {
     createCentreSector(state, catalog);
     const sector = Object.values(state.sectors)[0];
     if (!sector) throw new Error("sector missing");
-    const reservoirCells = sector.presentationCells.filter(c => c.kind === "reservoir");
-    expect(reservoirCells).toHaveLength(5);
-    expect(reservoirCells.some(c => c.col === 9 && c.row === 4 && c.kind === "reservoir")).toBe(true);
-    expect(reservoirCells.some(c => c.col === 10 && c.row === 6 && c.kind === "reservoir")).toBe(true);
+    const reservoirs = sector.features.filter(feature => feature.kind === "reservoir");
+    expect(reservoirs).toHaveLength(1);
+    expect(reservoirs[0]?.id).toBe("feature:3");
+    expect(reservoirs[0]?.cells).toHaveLength(5);
+    expect(reservoirs[0]?.cells).toContainEqual({ col: 9, row: 4 });
+    expect(reservoirs[0]?.cells).toContainEqual({ col: 10, row: 6 });
+  });
+
+  it("stores existing woodland as a physical feature", () => {
+    createCentreSector(state, catalog);
+    const sector = state.sectors["sector:1"];
+    if (!sector) throw new Error("sector missing");
+    expect(sector.features.filter(feature => feature.kind === "woodland")).toEqual([
+      {
+        id: "feature:1",
+        kind: "woodland",
+        origin: { col: 3, row: 8 },
+        dimensions: { width: 1, height: 1 },
+      },
+    ]);
+  });
+
+  it("does not pre-author a waterwheel location or facility", () => {
+    createCentreSector(state, catalog);
+    const sector = state.sectors["sector:1"];
+    if (!sector) throw new Error("sector missing");
+    expect(sector.features.some(feature =>
+      feature.kind !== "reservoir" && feature.origin.col === 8 && feature.origin.row === 5,
+    )).toBe(false);
+    expect(Object.keys(state.facilities)).toHaveLength(0);
   });
 
   it("idCounters are populated from fixture values", () => {
     createCentreSector(state, catalog);
     expect(state.idCounters.sectors).toBe(1);
-    expect(state.idCounters.sites).toBe(2);
+    expect(state.idCounters.features).toBe(3);
     expect(state.idCounters.towns).toBe(1);
+    expect(state.idCounters.facilities).toBe(0);
   });
 
   it("calling twice re-applies the same fixture state", () => {
     createCentreSector(state, catalog);
     createCentreSector(state, catalog);
     expect(Object.keys(state.sectors)).toEqual(["sector:1"]);
-    expect(Object.keys(state.sites)).toEqual(["site:1", "site:2"]);
     expect(Object.keys(state.towns)).toEqual(["town:1"]);
+    expect(Object.keys(state.facilities)).toEqual([]);
   });
 
-  it("does not depend on center sector definition presence in catalog", () => {
-    // fixture copy intentionally ignores content-sector lookup during fresh-map bootstrap
+  it("rejects a fixture whose sector definition is absent from the catalog", () => {
     const load = loadBundledContent();
     if (!load.ok) throw new Error(JSON.stringify(load.issues));
     const noSectors = buildIndexedCatalog({ ...load.bundle, sectors: [] });
     if (!noSectors.ok) throw new Error(JSON.stringify(noSectors.issues));
-    expect(() => createCentreSector(state, noSectors.catalog)).not.toThrow();
+    expect(() => createCentreSector(state, noSectors.catalog)).toThrow(CentreSectorError);
   });
 
-  it("does not validate site tags against catalog during fixture copy", () => {
-    const load = loadBundledContent();
-    if (!load.ok) throw new Error(JSON.stringify(load.issues));
-    // inject bad sector data in catalog; fixture copy should remain unaffected
-    const manipulatedCatalog = {
-      ...catalog,
-      sectors: new Map([
-        ["centre", {
-          id: "centre",
-          name: "Test",
-          biome: "temperate",
-          distanceFromCentre: 0,
-          siteTemplates: [{ templateId: "bad-site", tags: ["mystery-tag-xyz"] }],
-          hasTown: false,
-          initialAccessState: "buildable" as const,
-        }],
-      ]),
-    } as unknown as IndexedCatalog;
-    expect(() => createCentreSector(state, manipulatedCatalog)).not.toThrow();
+  it("accepts a constructed facility with one matching physical feature", () => {
+    const fixture = mutableFixture();
+    fixture.idCounters["features"] = 4;
+    fixture.idCounters["facilities"] = 1;
+    fixture.facilities["facility:1"] = {
+      id: "facility:1",
+      sectorId: "sector:1",
+      definitionId: "waterwheel",
+    };
+    fixture.sectors["sector:1"]?.features.push({
+      id: "feature:4",
+      kind: "facility",
+      facilityId: "facility:1",
+      origin: { col: 8, row: 5 },
+      dimensions: { width: 1, height: 1 },
+    });
+    expect(() => validateCentreMap(fixture, catalog)).not.toThrow();
+  });
+
+  it("rejects a facility feature with a dangling reference", () => {
+    const fixture = mutableFixture();
+    fixture.idCounters["features"] = 4;
+    fixture.sectors["sector:1"]?.features.push({
+      id: "feature:4",
+      kind: "facility",
+      facilityId: "facility:999",
+      origin: { col: 8, row: 5 },
+      dimensions: { width: 1, height: 1 },
+    });
+    expect(() => validateCentreMap(fixture, catalog)).toThrow(/unknown facility/);
+  });
+
+  it("rejects regular feature footprints outside the sector", () => {
+    const fixture = mutableFixture();
+    const feature = fixture.sectors["sector:1"]?.features[0];
+    if (!feature) throw new Error("feature missing");
+    feature["origin"] = { col: 11, row: 8 };
+    feature["dimensions"] = { width: 2, height: 1 };
+    expect(() => validateCentreMap(fixture, catalog)).toThrow(/complete footprint/);
+  });
+
+  it("rejects nonpositive feature dimensions", () => {
+    const fixture = mutableFixture();
+    const feature = fixture.sectors["sector:1"]?.features[0];
+    if (!feature) throw new Error("feature missing");
+    feature["dimensions"] = { width: 0, height: 1 };
+    expect(() => validateCentreMap(fixture, catalog)).toThrow(/positive integer/);
+  });
+
+  it("rejects invalid town tiers", () => {
+    const fixture = mutableFixture();
+    const feature = fixture.sectors["sector:1"]?.features.find(item => item["kind"] === "town");
+    if (!feature) throw new Error("town feature missing");
+    feature["tier"] = 7;
+    expect(() => validateCentreMap(fixture, catalog)).toThrow(/1 through 6/);
+  });
+
+  it("rejects duplicate cells inside a reservoir", () => {
+    const fixture = mutableFixture();
+    const feature = fixture.sectors["sector:1"]?.features.find(item => item["kind"] === "reservoir");
+    if (!feature) throw new Error("reservoir feature missing");
+    feature["cells"] = [{ col: 1, row: 1 }, { col: 1, row: 1 }];
+    expect(() => validateCentreMap(fixture, catalog)).toThrow(/duplicates another cell/);
+  });
+
+  it("rejects overlapping features", () => {
+    const fixture = mutableFixture();
+    const feature = fixture.sectors["sector:1"]?.features.find(item => item["kind"] === "reservoir");
+    if (!feature) throw new Error("reservoir feature missing");
+    feature["cells"] = [{ col: 6, row: 6 }];
+    expect(() => validateCentreMap(fixture, catalog)).toThrow(/overlaps another feature/);
+  });
+
+  it("rejects dangling feature references", () => {
+    const fixture = mutableFixture();
+    const feature = fixture.sectors["sector:1"]?.features.find(item => item["kind"] === "town");
+    if (!feature) throw new Error("town feature missing");
+    feature["townId"] = "town:999";
+    expect(() => validateCentreMap(fixture, catalog)).toThrow(/unknown town/);
+  });
+
+  it("rejects counters lower than fixture ids", () => {
+    const fixture = mutableFixture();
+    fixture.idCounters["features"] = 2;
+    expect(() => validateCentreMap(fixture, catalog)).toThrow(/idCounters.features must be at least 3/);
   });
 
   it("state serializes cleanly after creation", () => {

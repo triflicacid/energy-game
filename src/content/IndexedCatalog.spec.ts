@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BiomeId } from "@shared/IdCounter";
+import { makeResourceId } from "@shared/IdCounter";
 import type { ContentBundle, ResearchNodeDef, ResourceDef, SectorDef } from "./defs";
 import { loadBundledContent } from "./ContentLoader";
 import { buildIndexedCatalog } from "./IndexedCatalog";
@@ -7,14 +8,14 @@ import { buildIndexedCatalog } from "./IndexedCatalog";
 // minimal valid construction helpers
 
 function resource(id: string, importable = true): ResourceDef {
-  return { id, category: "organic", unit: "kg", storable: true, importable, renewable: true, waste: false, hazardous: false };
+  return { id: makeResourceId(id), category: "organic", unit: "kg", storable: true, importable, renewable: true, waste: false, hazardous: false };
 }
 
 function researchNode(id: string, parentIds: string[] = [], unlockIds: string[] = []): ResearchNodeDef {
   return { id, era: "opening", parentIds, researchCost: 0, unlockIds };
 }
 
-function sector(id: string, tags: string[][] = []): SectorDef {
+function sector(id: string): SectorDef {
   return {
     id,
     name: id,
@@ -23,7 +24,6 @@ function sector(id: string, tags: string[][] = []): SectorDef {
     diameter: 10,
     gridQ: 0,
     gridR: 0,
-    siteTemplates: tags.map((t, i) => ({ templateId: `${id}-site-${i}`, tags: t, x: i, y: 0 })),
     hasTown: false,
     initialAccessState: "buildable",
   };
@@ -109,7 +109,7 @@ describe("cross-reference validation", () => {
       recipes: [{
         id: "bad-recipe",
         inputs: [],
-        outputs: [{ resourceId: "ghost-wood", qty: 1 }],
+        outputs: [{ resourceId: makeResourceId("ghost-wood"), qty: 1 }],
         byproducts: [],
         durationHours: 1,
         mechPowerKW: 0,
@@ -127,7 +127,7 @@ describe("cross-reference validation", () => {
       facilities: [{
         id: "workshop",
         behaviorId: "materialProcessor",
-        validSiteTags: [],
+        placementRuleId: "general",
         constructionCost: [],
         constructionMoneyBase: 0,
         constructionTimeHours: 1,
@@ -147,7 +147,7 @@ describe("cross-reference validation", () => {
       facilities: [{
         id: "workshop",
         behaviorId: "materialProcessor",
-        validSiteTags: [],
+        placementRuleId: "general",
         constructionCost: [],
         constructionMoneyBase: 0,
         constructionTimeHours: 1,
@@ -185,7 +185,7 @@ describe("cross-reference validation", () => {
       facilities: [{
         id: "my-facility",
         behaviorId: "forestGrowth",
-        validSiteTags: [],
+        placementRuleId: "general",
         constructionCost: [],
         constructionMoneyBase: 0,
         constructionTimeHours: 1,
@@ -275,8 +275,8 @@ describe("resource producibility", () => {
       facilities: [{
         id: "ore-smelter",
         behaviorId: "materialProcessor",
-        validSiteTags: [],
-        constructionCost: [{ resourceId: "mystery-ore", qty: 10 }],
+        placementRuleId: "general",
+        constructionCost: [{ resourceId: makeResourceId("mystery-ore"), qty: 10 }],
         constructionMoneyBase: 0,
         constructionTimeHours: 1,
         requiredResearch: [],
@@ -296,7 +296,7 @@ describe("resource producibility", () => {
       recipes: [{
         id: "chip-timber",
         inputs: [],
-        outputs: [{ resourceId: "wood-chips", qty: 5 }],
+        outputs: [{ resourceId: makeResourceId("wood-chips"), qty: 5 }],
         byproducts: [],
         durationHours: 1,
         mechPowerKW: 0,
@@ -306,8 +306,8 @@ describe("resource producibility", () => {
       facilities: [{
         id: "chipper",
         behaviorId: "materialProcessor",
-        validSiteTags: [],
-        constructionCost: [{ resourceId: "wood-chips", qty: 2 }],
+        placementRuleId: "general",
+        constructionCost: [{ resourceId: makeResourceId("wood-chips"), qty: 2 }],
         constructionMoneyBase: 0,
         constructionTimeHours: 1,
         requiredResearch: [],
@@ -342,7 +342,7 @@ describe("circular unlock detection", () => {
       facilities: [{
         id: "mill",
         behaviorId: "materialProcessor",
-        validSiteTags: [],
+        placementRuleId: "general",
         constructionCost: [],
         constructionMoneyBase: 0,
         constructionTimeHours: 1,
@@ -382,35 +382,7 @@ describe("aggregated error reporting", () => {
   });
 });
 
-describe("sector site tag validation", () => {
-  it("accepts a sector whose site tags all match a known facility validSiteTag", () => {
-    const result = buildIndexedCatalog(bundle({
-      facilities: [{
-        id: "mill",
-        behaviorId: "forestGrowth",
-        validSiteTags: ["forest"],
-        constructionCost: [],
-        constructionMoneyBase: 0,
-        constructionTimeHours: 1,
-        requiredResearch: [],
-        recipeIds: [],
-        upgradeIds: [],
-        capabilities: [],
-      }],
-      sectors: [sector("centre", [["forest"]])],
-    }));
-    expect(result.ok).toBe(true);
-  });
-
-  it("reports a sector site template using a tag absent from all facility validSiteTags", () => {
-    const result = buildIndexedCatalog(bundle({
-      sectors: [sector("centre", [["mystery-tag"]])],
-    }));
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.issues.some((i) => i.catalog === "sectors" && i.itemId === "centre" && i.message.includes("mystery-tag"))).toBe(true);
-  });
-
+describe("sector catalog validation", () => {
   it("reports a duplicate sector ID", () => {
     const result = buildIndexedCatalog(bundle({
       sectors: [sector("centre"), sector("centre")],
@@ -427,17 +399,6 @@ describe("sector site tag validation", () => {
     if (!result.ok) throw new Error(JSON.stringify(result.issues));
     expect(result.catalog.getSector("centre")).toBeDefined();
     expect(result.catalog.getSector("nonexistent")).toBeUndefined();
-  });
-
-  it("bundled centre sector has forest and waterwheel-site site templates", () => {
-    const load = loadBundledContent();
-    if (!load.ok) throw new Error(JSON.stringify(load.issues));
-    const result = buildIndexedCatalog(load.bundle);
-    if (!result.ok) throw new Error(JSON.stringify(result.issues));
-    const centre = result.catalog.getSector("centre");
-    const allTags = centre?.siteTemplates.flatMap((t) => t.tags) ?? [];
-    expect(allTags).toContain("forest");
-    expect(allTags).toContain("waterwheel-site");
   });
 });
 

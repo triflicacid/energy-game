@@ -7,10 +7,6 @@
     "diameter": 12,
     "gridQ": 0,
     "gridR": 0,
-    "siteTemplates": [
-      { "templateId": "centre-forest-1", "tags": ["forest"], "x": -3, "y": 2 },
-      { "templateId": "centre-waterwheel-1", "tags": ["waterwheel-site"], "x": 2, "y": -1 }
-    ],
     "hasTown": true,
     "initialAccessState": "buildable"
   }

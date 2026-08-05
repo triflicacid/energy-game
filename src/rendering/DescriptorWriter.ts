@@ -11,7 +11,7 @@ export type DescriptorOptions = {
 
 /** returns the full TypeScript source string for a generated atlas descriptor */
 export function generateDescriptor(opts: DescriptorOptions): string {
-  const { atlasId, atlasWidth, atlasHeight, entries, generatedAt } = opts;
+  const { atlasId, atlasWidth, atlasHeight, entries } = opts;
 
   const ids = entries.map(e => `"${e.id}"`).join(" | ");
   const upperAtlas = atlasId.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());

@@ -31,8 +31,9 @@ World visuals use layers rather than self-contained scene images:
 - Every visible cell first receives one opaque `biome-*` background tile.
 - Physical objects are transparent overlays. Forests, towns, reservoirs, and facilities must leave the biome visible wherever they do not paint the object itself.
 - An overlay may include local scenery that is integral to its subject. In particular, the built waterwheel retains its river and bank along the bottom of the sprite; it does not repaint the whole biome background.
-- Semantic site suitability is gameplay data, not a visible object. `general-site` and `waterwheel-site` do not have placeholder sprites. A waterwheel is drawn only after a waterwheel facility exists.
+- Construction suitability is a transient gameplay query, not a visible world object or persisted feature. Empty candidate cells do not have placeholder sprites. A waterwheel is drawn only after a waterwheel facility and its physical feature exist.
 - A forest is different from an invisible build opportunity. Innate woodland is projected from sector state rather than a site or entity; planted woodland is projected from its separate instance state. Both remain visible until terminal depletion and then disappear.
+- Logical placement comes from sector features: regular features use a canonical top-left origin and dimensions, while irregular reservoir features list explicit occupied cells. These values are independent from sprite pixel anchors.
 
 ### Canonical world draw order
 
@@ -48,7 +49,7 @@ The renderer must not choose gameplay state from sprite transparency or draw ord
 
 ### Construction mode
 
-When the player selects a facility to build, the application evaluates its real placement rules, including valid site tags, ownership/unlock state, biome or research restrictions, occupancy, footprint, and other facility requirements. Eligible cells or footprints receive a faint runtime outline. This highlight:
+When the player selects a facility to build, the application evaluates its registered placement rule against candidate footprints, including ownership and unlock state, biome or research restrictions, occupancy, adjacency, resource access, and other facility requirements. Eligible cells or footprints receive a faint runtime outline. This highlight:
 
 - Is drawn by the renderer as a transient vector/UI overlay, not loaded from a site-placeholder sprite.
 - Uses the gameplay footprint rather than the completed sprite's opaque bounds.
@@ -197,7 +198,7 @@ Defined in the data-driven facility content:
 
 - Width and height in map cells
 - Occupied/blocked cells, if not rectangular
-- Placement and site requirements
+- Placement-rule and sector-state requirements
 - Connection points where needed
 - Rotation support
 
@@ -228,7 +229,7 @@ anchor: generated visual descriptor
 
 At render time:
 
-1. The facility instance identifies its origin cell and rotation.
+1. The facility's sector feature identifies its canonical top-left origin cell and regular footprint; rotation remains facility placement state when supported.
 2. Gameplay uses the facility definition's footprint to determine occupied cells.
 3. Rendering converts the origin cell to screen coordinates.
 4. The generated sprite anchor offsets the composite image correctly.
@@ -275,7 +276,7 @@ Reservoir water uses 16 transparent cardinal-neighbour variants named `reservoir
 - South = `0x4`
 - West = `0x8`
 
-The set covers the isolated rounded pond, four endpoints, two straights, four corners, four T-junctions, and the fully connected tile. A connection is present only when the adjacent cardinal cell belongs to the same reservoir visual join group. Diagonal-only contact does not join, and different reservoirs do not join merely because their cells touch.
+The set covers the isolated rounded pond, four endpoints, two straights, four corners, four T-junctions, and the fully connected tile. Each reservoir feature's explicit cells form one visual join group. A connection is present only when the adjacent cardinal cell belongs to that same feature. Diagonal-only contact does not join, and different reservoir features do not join merely because their cells touch.
 
 These pieces are a presentation overlay drawn over the biome and below dams, powerhouses, and other facility sprites. Their visual cell count and shape do not determine reservoir capacity, facility footprint, water balance, or simulation connectivity.
 
@@ -345,7 +346,7 @@ Gameplay footprints and connection points must rotate through deterministic cell
 
 ## Anchoring and drawing order
 
-Choose one consistent facility origin convention, such as the footprint's top-left cell for gameplay. Each sprite descriptor then supplies the pixel anchor that aligns the visual base to that origin.
+Sector features use the footprint's top-left cell as the canonical logical origin. This removes any need for a campaign-state anchor field. Each sprite descriptor separately supplies the visual pixel anchor that aligns the image to that origin; generated sprite anchors are rendering metadata and are never serialized as feature geometry.
 
 For top-down rendering, draw order can primarily use:
 

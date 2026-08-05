@@ -29,8 +29,9 @@ describe("createCampaignState", () => {
   it("initializes all id counters at zero", () => {
     const { idCounters } = createCampaignState({ seed: 1 });
     expect(idCounters.sectors).toBe(0);
+
+    expect(idCounters.features).toBe(0);
     expect(idCounters.towns).toBe(0);
-    expect(idCounters.sites).toBe(0);
     expect(idCounters.facilities).toBe(0);
     expect(idCounters.contracts).toBe(0);
     expect(idCounters.constructionJobs).toBe(0);
@@ -48,7 +49,6 @@ describe("createCampaignState", () => {
     const state = createCampaignState({ seed: 1 });
     expect(Object.keys(state.sectors)).toHaveLength(0);
     expect(Object.keys(state.towns)).toHaveLength(0);
-    expect(Object.keys(state.sites)).toHaveLength(0);
     expect(Object.keys(state.facilities)).toHaveLength(0);
     expect(Object.keys(state.contracts)).toHaveLength(0);
     expect(Object.keys(state.inventory.quantities)).toHaveLength(0);
@@ -76,6 +76,46 @@ describe("serializeCampaignState / deserializeCampaignState", () => {
     expect(restored.rng).toEqual(state.rng);
   });
 
+  it("round-trips every sector feature variant", () => {
+    const state = createCampaignState({ seed: 7 });
+    state.sectors = {
+      "sector:1": {
+        id: "sector:1",
+        definitionId: "centre",
+        accessState: "buildable",
+        features: [
+          {
+            id: "feature:1",
+            kind: "woodland",
+            origin: { col: 2, row: 3 },
+            dimensions: { width: 2, height: 1 },
+          },
+          {
+            id: "feature:2",
+            kind: "town",
+            townId: "town:1",
+            origin: { col: 4, row: 5 },
+            tier: 3,
+          },
+          {
+            id: "feature:3",
+            kind: "facility",
+            facilityId: "facility:1",
+            origin: { col: 6, row: 7 },
+            dimensions: { width: 2, height: 1 },
+          },
+          {
+            id: "feature:4",
+            kind: "reservoir",
+            cells: [{ col: 8, row: 7 }, { col: 9, row: 7 }],
+          },
+        ],
+      },
+    };
+    const restored = deserializeCampaignState(serializeCampaignState(state));
+    expect(restored.sectors).toEqual(state.sectors);
+  });
+
   it("produces plain JSON-compatible data with no class instances", () => {
     const state = createCampaignState({ seed: 1 });
     const serialized = serializeCampaignState(state);
@@ -97,6 +137,12 @@ describe("serializeCampaignState / deserializeCampaignState", () => {
     const raw = serializeCampaignState(createCampaignState({ seed: 1 })) as Record<string, unknown>;
     raw["version"] = 999;
     expect(() => deserializeCampaignState(raw)).toThrow(TypeError);
+  });
+
+  it("rejects version 5 saves without migration", () => {
+    const raw = serializeCampaignState(createCampaignState({ seed: 1 })) as Record<string, unknown>;
+    raw["version"] = 5;
+    expect(() => deserializeCampaignState(raw)).toThrow(/expected 6, got 5/);
   });
 
   it("does not embed content definition catalogs in state", () => {

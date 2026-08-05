@@ -2,9 +2,9 @@
 
 ## Model
 
-The campaign map is a connected graph of **sectors** rather than a simulation of physical terrain. A sector is an area of climate, resources, water, sites, and grid connectivity; it is not synonymous with a town.
+The campaign map is a connected graph of **sectors** rather than a simulation of physical terrain. A sector is an area of climate, resources, water, physical features, and grid connectivity; it is not synonymous with a town.
 
-- **Nodes:** sectors containing resources, climate, water, construction sites, and zero or more towns
+- **Nodes:** sectors containing resources, climate, water, physical features, and zero or more towns
 - **Edges:** possible electrical interconnections with distance, capacity, cost, and loss
 - **Visual form:** fixed hexes, generated connected cells, or stylized polygons
 
@@ -21,9 +21,10 @@ Each sector defines:
 - Sector-local water stock, inflow, capture, retention, evaporation, and environmental reserve
 - Known and hidden finite reserve/endowment records keyed by resource type, including quantity, quality, accessibility, survey confidence, and exhaustion
 - References to player-planted forest instances
-- General, extraction, forestry, water, coastal, and geothermal facility-placement sites
+- Physical woodland, town, reservoir, and constructed-facility features
 - Existing transmission and import access
 - Environmental sensitivity and pollution capacity
+- Identified spatial features for existing woodland, towns, facilities, and irregular reservoir topology
 
 Town instances are separate entities that reference their containing sector. A sector may:
 
@@ -34,11 +35,17 @@ Town instances are separate entities that reference their containing sector. A s
 
 Generation should intentionally include empty sectors so remote resources and generation require strategic transmission investment.
 
-Natural reserve, innate woodland, and water records are structured sector state, not spawned resource entities, and do not need runtime entity IDs. Player-planted forests are the only separately instantiated natural resources. Placement sites constrain facilities independently of the natural state they access.
+Natural reserve, innate woodland, and water records are structured sector state, not spawned resource entities, and do not need runtime entity IDs. Player-planted forests are the only separately instantiated natural resources. Facility placement is evaluated from the selected definition, candidate footprint, and current sector state when construction is requested.
 
-## Site categories
+### Spatial feature conventions
 
-### General sites
+Every sector feature has a stable feature ID and a discriminated kind. Regular features use an `origin` measured from the top-left sector cell plus positive `width` and `height` dimensions. Point features use only their canonical origin. Irregular features such as reservoirs list every occupied cell explicitly. An additional anchor is unnecessary; visual pixel alignment belongs to the sprite descriptor.
+
+Facility features reference top-level facility entities, and town features reference top-level town entities. The referenced entities own gameplay state while the feature owns logical placement. Woodland features directly represent existing innate woodland. Feature cells must be integral, in bounds, unique where listed, and compatible with the sector's occupancy rules. Empty candidate construction locations are not features or entities.
+
+## Placement rule categories
+
+### General placement
 
 Support facilities without a special geographic requirement:
 
@@ -48,16 +55,16 @@ Support facilities without a special geographic requirement:
 - Substations
 - Some thermal and solar plants
 
-### Extraction sites
+### Extraction placement
 
-Identify places where a compatible facility can access a sector reserve such as:
+Recognize candidate footprints where a compatible facility can access a sector reserve such as:
 
 - Iron, copper, gold, uranium, coal, oil, or gas
 - Aggregate or silica
 
-A survey reveals increasingly accurate knowledge on the sector reserve record. A mine, quarry, or well is required for extraction and determines extraction capacity; the sector's remaining reserve determines its lifetime. An extraction site is not a deposit and does not own the reserve.
+A survey reveals increasingly accurate knowledge on the sector reserve record. A mine, quarry, or well is required for extraction and determines extraction capacity; the sector's remaining reserve determines its lifetime. A candidate footprint is not a deposit and does not own the reserve.
 
-### Forest sites
+### Forestry placement
 
 Provide placement and access for forestry facilities that support:
 
@@ -68,27 +75,27 @@ Provide placement and access for forestry facilities that support:
 
 Innate woodland biomass remains sector-owned state and is projected visually without becoming a site or entity. It grows only while viable; complete depletion removes it and requires deliberate planting rather than spontaneous recovery. Player-planted forests are separate lifecycle instances and are the only instantiated natural resources.
 
-### Water and hydro sites
+### Water and hydro placement
 
-Define abstract hydrological opportunities:
+Placement rules can recognize hydrological opportunities such as:
 
-- Waterwheel site
-- Run-of-river site
+- Waterwheel location
+- Run-of-river location
 - Small reservoir
 - Large reservoir
-- Pumped-storage site
+- Pumped-storage location
 
-The player builds on a named semantic site; no river or lake geometry is simulated. A site or tag such as `waterwheel-site` constrains placement but is not itself a persistent map sprite. The completed waterwheel is rendered only when the facility exists.
+The player proposes a footprint; no river or lake geometry is simulated. A waterwheel candidate is suitable only when its current cells satisfy the registered rule, including cardinal adjacency to reservoir water. No site entity or persistent placeholder exists. A facility feature is created and rendered only when construction creates the waterwheel.
 
-Reservoir facilities may use connected water autotiles to communicate their extent visually. Those tiles are presentation overlays over the biome, not generated terrain: their shape and cell count do not define storage capacity, water balance, facility footprint, or simulation connectivity.
+Reservoir facilities may use connected water autotiles to communicate their extent visually. One reservoir feature contains the complete explicit cell set for one visual join group; adjacent cells in different reservoir features do not connect. Those tiles are presentation overlays over the biome, not generated terrain: their shape and cell count do not define storage capacity, water balance, facility footprint, or simulation connectivity.
 
 Reservoirs access local sector water and add rainy-season capture, retention, usable storage, and withdrawal or release capacity. They do not create water or fill on construction. Contents increase only through later captured inflow or an explicitly accounted transfer.
 
-### Wind and solar sites
+### Wind and solar placement
 
-All sectors may expose a baseline potential, while especially good sites provide higher capacity or lower cost. Wind and solar remain weather-dependent.
+All sectors may expose a baseline potential, while especially good candidate footprints provide higher capacity or lower cost. Wind and solar remain weather-dependent.
 
-### Coastal sites
+### Coastal placement
 
 Support:
 
@@ -98,13 +105,15 @@ Support:
 - Seawater cooling
 - Electricity or fuel imports
 
-### Geothermal sites
+### Geothermal placement
 
 Contain temperature, depth, flow, and depletion/recovery characteristics.
 
 ## Placement principles
 
-Construction mode visualizes placement rules directly. After a facility is selected, valid cells or footprints receive a faint transient outline derived from site tags, ownership, research/biome access, occupancy, and the facility's other placement requirements. General and water-specific opportunities do not use placeholder building sprites. Innate woodland is projected from sector state, while planted woodland is projected from its separate instance state; both remain visible outside construction mode until depleted.
+Construction mode visualizes placement rules directly. After a facility is selected, candidate cells or footprints are evaluated against ownership, research and biome access, occupancy, adjacent physical features, resource or water access, and the facility's registered placement rule. Valid footprints receive a faint transient outline. Empty opportunities do not use placeholder sprites or persisted entities. Innate woodland is projected from sector state, while planted woodland is projected from its separate instance state; both remain visible outside construction mode until depleted.
+
+When construction begins or completes, the resulting facility feature owns the resolved campaign origin and dimensions and references the facility entity. Multi-cell facilities use the same top-left origin convention; rendering applies visual sprite anchors separately.
 
 Location should matter through energy-relevant constraints:
 
@@ -137,8 +146,8 @@ A sector progresses through explicit states:
 
 - **Unknown:** outside current knowledge or explorer range.
 - **Frontier:** its location/broad biome may be visible, but details are hidden.
-- **Explored:** biome, towns, visible sites, and broad potential are known.
-- **Surveyed:** sector reserves/endowments and site quality have more accurate estimates.
+- **Explored:** biome, towns, visible physical features, and broad potential are known.
+- **Surveyed:** sector reserves/endowments and placement-potential quality have more accurate estimates.
 - **Unlocked:** acquisition has been paid and normal operations are permitted.
 - **Buildable:** all required biome-construction research for a proposed facility is available.
 
@@ -180,7 +189,7 @@ Sector acquisition cost is data-driven and derived from factors such as:
 - Ease of development
 - Renewable and resource potential
 - Existing towns and expected contract profitability
-- Known sites or infrastructure
+- Known physical features or infrastructure
 - Scenario and market modifiers
 
 Distance should increase cost nonlinearly enough to make outward expansion a strategic investment. Easier or more profitable sectors command a higher acquisition price, while difficult sectors may be cheaper but impose greater construction, maintenance, water, or reliability costs after acquisition.
@@ -203,7 +212,7 @@ Generation must validate that every campaign contains:
 - A small initially accessible centre area with a viable opening loop
 - At least one useful frontier choice at each intended explorer tier
 - Biome research requirements that do not make required progression unreachable
-- A timber start and viable waterwheel or windmill site
+- A timber start and viable waterwheel or windmill candidate location
 - A path to iron and copper after prospecting
 - At least two viable early electrical strategies
 - Sufficient water or a low-water technology route
@@ -220,12 +229,12 @@ Invalid graphs should be regenerated.
 
 ## Map evolution
 
-Sites retain history:
+Constructed locations retain history:
 
-- A waterwheel site can later host modern small hydro.
+- A former waterwheel location can later host modern small hydro when its current placement rule is satisfied.
 - A wooden wind installation can be replaced while retaining its grid connection.
-- A closed mine site over an exhausted sector reserve can become pumped storage, compressed-air storage, geothermal, waste storage, restored land, or another industrial site.
-- A closed oil or gas extraction site over an exhausted sector reserve may support gas, hydrogen, or carbon storage.
+- A closed mine location over an exhausted sector reserve can become pumped storage, compressed-air storage, geothermal, waste storage, restored land, or another industrial use.
+- A closed oil or gas extraction location over an exhausted sector reserve may support gas, hydrogen, or carbon storage.
 - A closed facility leaves reusable materials, contamination, or remediation work.
 
 This rewards long-term planning without requiring one facility to transform implausibly into another.
@@ -287,9 +296,9 @@ For the first playable campaign:
 
 - 8–12 connected sectors
 - Zero or more independent town nodes per sector, with empty sectors expected and some sectors containing multiple towns
-- Generated starting towns plus the ability to found a new town at a valid settlement site
+- Generated starting towns plus the ability to found a new town on a valid candidate footprint
 - Centre distance, access state, biome exploration/build requirements, and acquisition cost for every sector
-- A small number of typed construction sites
+- Registered facility placement rules evaluated against current sector state
 - Structured finite-reserve, innate-woodland, and local-water sector state, with no deposit entities
 - Player-planted forests as the only separate natural-resource instances
 - Extraction facilities required to turn sector reserves or woodland into inventory goods

@@ -3,8 +3,6 @@
 import type { IndexedCatalog } from "@content";
 import type {
   ReadonlyCampaignState,
-  ReservoirPresentationCellSerialState,
-  TownPresentationCellSerialState,
   TownVisualTier,
 } from "@simulation/CampaignState";
 import { reservoirConnectionMask, reservoirSpriteId } from "./ReservoirAutotile";
@@ -25,14 +23,6 @@ function resolveTownSpriteId(tier: TownVisualTier | undefined): WorldSpriteId {
   }
   const spriteId = `town-tier-${tier}` as WorldSpriteId;
   return WORLD_SPRITES[spriteId] ? spriteId : "town";
-}
-
-function isTownPresentationCell(cell: { readonly kind: string }): cell is TownPresentationCellSerialState {
-  return cell.kind === "town";
-}
-
-function isReservoirPresentationCell(cell: { readonly kind: string }): cell is ReservoirPresentationCellSerialState {
-  return cell.kind === "reservoir";
 }
 
 /**
@@ -60,10 +50,6 @@ export function projectSectorScene(
   }
 
   const { diameter } = sectorDef;
-  const half = Math.floor(diameter / 2);
-
-  // build templateId → SiteTemplateDef lookup for O(1) access
-  const templateByTemplateId = new Map(sectorDef.siteTemplates.map(t => [t.templateId, t]));
 
   // biome sprite ID derived from sector definition; validated against known atlas sprites
   const biomeSpriteId = `biome-${sectorDef.biome}` as WorldSpriteId;
@@ -84,69 +70,60 @@ export function projectSectorScene(
     }
   }
 
-  // site overlays and facilities are derived from top-level site state by sectorId
-  const sectorSites = Object.values(state.sites)
-    .filter(site => site.sectorId === sectorId)
-    .sort((a, b) => a.id.localeCompare(b.id));
-  for (const site of sectorSites) {
-
-    const template = templateByTemplateId.get(site.templateId);
-    if (!template) {
-      // dev warning: site has no matching template; skip without crashing
-      console.warn(`SceneProjector: site "${siteId}" templateId "${site.templateId}" not found in sector "${sector.definitionId}"`);
+  for (const feature of sector.features) {
+    if (feature.kind === "woodland") {
+      for (let row = feature.origin.row; row < feature.origin.row + feature.dimensions.height; row++) {
+        for (let col = feature.origin.col; col < feature.origin.col + feature.dimensions.width; col++) {
+          entities.push({ col, row, spriteId: "innate-woodland-mature-full" });
+        }
+      }
       continue;
     }
 
-    const col = template.x + half;
-    const row = template.y + half;
-
-    // forest is a persistent physical resource — draw its overlay when the site has the forest tag
-    if (site.tags.includes("forest")) {
-      entities.push({ col, row, spriteId: "forest-site" });
-    }
-    // waterwheel-site and general-site suitability produce no sprite; art appears only when built
-
-    // facility sprite: emitted only when an instance exists at this site
-    if (site.facilityId !== null) {
-      const facilityState = state.facilities[site.facilityId];
-      if (facilityState) {
-        const facilityDef = catalog.facilities.get(facilityState.definitionId);
-        if (facilityDef?.spriteId) {
-          const spriteId = facilityDef.spriteId as WorldSpriteId;
-          if (WORLD_SPRITES[spriteId]) {
-            facilities.push({ col, row, spriteId });
-          } else {
-            console.warn(`SceneProjector: facility "${facilityDef.id}" spriteId "${facilityDef.spriteId}" not found in world atlas`);
-          }
+    if (feature.kind === "facility") {
+      const facilityState = state.facilities[feature.facilityId];
+      if (!facilityState || facilityState.sectorId !== sectorId) {
+        console.warn(`SceneProjector: facility feature "${feature.id}" references missing facility "${feature.facilityId}" in sector "${sectorId}"`);
+        continue;
+      }
+      const facilityDef = catalog.facilities.get(facilityState.definitionId);
+      if (facilityDef?.spriteId) {
+        const spriteId = facilityDef.spriteId as WorldSpriteId;
+        if (WORLD_SPRITES[spriteId]) {
+          facilities.push({ ...feature.origin, spriteId });
+        } else {
+          console.warn(`SceneProjector: facility "${facilityDef.id}" spriteId "${facilityDef.spriteId}" not found in world atlas`);
         }
       }
     }
   }
 
-  // towns: placement/tier come from sector-owned presentation state
-  const townCells = sector.presentationCells.filter(isTownPresentationCell);
-  const townCellByTownId = new Map(townCells.map(cell => [cell.townId, cell]));
-  const sectorTownIds = Object.values(state.towns)
-    .filter(town => town.sectorId === sectorId)
-    .map(town => town.id)
-    .sort((a, b) => a.localeCompare(b));
-  for (const townId of sectorTownIds) {
-    const cell = townCellByTownId.get(townId);
-    if (!cell) {
-      console.warn(`SceneProjector: no town presentation cell for town "${townId}" in sector "${sector.definitionId}"`);
+  const referencedTownIds = new Set<string>();
+  for (const feature of sector.features) {
+    if (feature.kind !== "town") continue;
+    const town = state.towns[feature.townId];
+    if (!town || town.sectorId !== sectorId) {
+      console.warn(`SceneProjector: town feature "${feature.id}" references missing town "${feature.townId}" in sector "${sectorId}"`);
       continue;
     }
-    entities.push({ col: cell.col, row: cell.row, spriteId: resolveTownSpriteId(cell.tier) });
+    referencedTownIds.add(town.id);
+    entities.push({ ...feature.origin, spriteId: resolveTownSpriteId(feature.tier) });
+  }
+  for (const town of Object.values(state.towns)) {
+    if (town.sectorId === sectorId && !referencedTownIds.has(town.id)) {
+      console.warn(`SceneProjector: no town feature for town "${town.id}" in sector "${sector.definitionId}"`);
+    }
   }
 
-  // reservoir autotile: connect any cardinally adjacent reservoir cells
-  const reservoirCells = sector.presentationCells.filter(isReservoirPresentationCell);
-  const reservoirPositions = new Set(reservoirCells.map(c => `${c.col},${c.row}`));
-  for (const cell of reservoirCells) {
-    const mask = reservoirConnectionMask((dx, dy) => {
-      return reservoirPositions.has(`${cell.col + dx},${cell.row + dy}`);
-    });
-    groundOverlays.push({ col: cell.col, row: cell.row, spriteId: reservoirSpriteId(mask) });
+  for (const feature of sector.features) {
+    if (feature.kind !== "reservoir") continue;
+    const reservoirPositions = new Set(feature.cells.map(cell => `${cell.col},${cell.row}`));
+    for (const cell of feature.cells) {
+      const mask = reservoirConnectionMask((dx, dy) => {
+        return reservoirPositions.has(`${cell.col + dx},${cell.row + dy}`);
+      });
+      groundOverlays.push({ ...cell, spriteId: reservoirSpriteId(mask) });
+    }
   }
 
   // sort all layers for determinism — same input always produces the same output

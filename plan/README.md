@@ -17,7 +17,7 @@ The central question is:
 3. **Distinct generation technologies** — plants differ through availability, dispatchability, fuel, water use, ramping, reliability, lifetime, and environmental effects rather than only price and output.
 4. **Seasonal planning** — weather, renewable output, water inflow, forestry growth, and town demand change predictably through the year.
 5. **Finite resources and circularity** — finite sector reserves decline through extraction; decommissioning creates recoverable scrap; recycling reduces fresh extraction but never replenishes natural reserves.
-6. **Spatial grid strategy** — sectors contain sites and zero or more towns; electricity earns money only after it reaches customers through adequate grid infrastructure.
+6. **Spatial grid strategy** — sectors contain physical features and zero or more towns; construction suitability is evaluated from current sector state, and electricity earns money only after it reaches customers through adequate grid infrastructure.
 7. **Data-driven content** — resource types, recipes, facilities, upgrades, research nodes, sector/town archetypes, seasons, and contracts are defined as validated data connected by stable IDs. Catalog content must not be hard-coded into simulation or UI logic.
 8. **Controlled scope** — no individual citizens, street layouts, vehicle routing, realistic terrain generation, or complete world economy.
 9. **Event-driven coordination** — a central type-safe event bus publishes named events with typed payloads to all registered listeners, allowing simulation systems, application services, history, and presentation to react without direct coupling.
@@ -57,10 +57,10 @@ At each simulation interval:
 - All extracted, harvested, processed, imported, decommissioned, and recycled goods use one company-wide inventory. There are no sector, warehouse, extractor, or general facility inventories in the current scope. Inter-sector freight may later add automatic cost and delay, but the player does not route trucks or trains.
 - Finite reserves, innate woodland, and water are structured sector state rather than spawned natural-resource entities. Player-planted forests are the only separate natural-resource instances.
 - Viable innate woodland can grow, but complete depletion removes it and does not spontaneously restore it. Planted forests use freshly planted, growing, mature/full, semi-harvested/sparse, and nearly-empty visuals and disappear when depleted.
-- Reservoirs and hydro opportunities are sector sites and water balances, not generated lakes or rivers. Reservoirs improve rainy-season capture, retention, usable storage, and withdrawal capacity; they neither create water nor fill instantly.
+- Reservoirs and hydro opportunities come from physical reservoir features and sector water balances, not generated lakes, rivers, or pre-authored site entities. Reservoirs improve rainy-season capture, retention, usable storage, and withdrawal capacity; they neither create water nor fill instantly.
 - Recycling returns recovered goods to company inventory and never replenishes geological reserves, woodland biomass, or sector water.
 - Every inventory resource has a stable icon reference.
-- World art is layered: an opaque biome tile forms the normal background, while reservoirs, forests, towns, and facilities are transparent overlays. Construction opportunities are semantic data shown as faint outlines only while construction mode is active, not persistent placeholder sprites.
+- World art is layered: an opaque biome tile forms the normal background, while reservoirs, forests, towns, and facilities are transparent overlays. Construction opportunities are computed transiently from candidate footprints and current state, then shown as faint outlines only while construction mode is active; they are not persisted entities or placeholder sprites.
 - Minor hand tools and incidental early building materials are part of the starting abstraction.
 - Imports provide an expensive safety valve so a campaign cannot become permanently deadlocked.
 

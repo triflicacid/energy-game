@@ -11,18 +11,6 @@ export type SectorAccessState =
   | "unlocked"
   | "buildable";
 
-/** a named construction site template within a sector definition */
-export type SiteTemplateDef = {
-  /** stable identifier for this site template within its parent sector */
-  readonly templateId: string;
-  /** facility site-type tags that determine which facilities may be built here */
-  readonly tags: readonly string[];
-  /** tile offset from the sector centre along the x axis */
-  readonly x: number;
-  /** tile offset from the sector centre along the y axis */
-  readonly y: number;
-};
-
 /** immutable definition of a map sector */
 export type SectorDef = {
   readonly id: string;
@@ -37,8 +25,6 @@ export type SectorDef = {
   readonly gridQ: number;
   /** axial hex-grid row on the campaign map (0 for the centre sector) */
   readonly gridR: number;
-  /** site templates pre-defined in this sector */
-  readonly siteTemplates: readonly SiteTemplateDef[];
   /** whether a starting town is generated in this sector on campaign initialisation */
   readonly hasTown: boolean;
   /** access state assigned to this sector when a new campaign is created */
@@ -79,7 +65,8 @@ export type RecipeDef = {
 export type FacilityDef = {
   readonly id: string;
   readonly behaviorId: string;
-  readonly validSiteTags: readonly string[];
+  /** registered rule used to evaluate candidate cells when construction is requested */
+  readonly placementRuleId: string;
   readonly constructionCost: readonly ResourceRef[];
   readonly constructionMoneyBase: number;
   readonly constructionTimeHours: number;

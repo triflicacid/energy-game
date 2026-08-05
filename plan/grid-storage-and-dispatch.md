@@ -43,9 +43,9 @@ Electricity is sold only at the customer connection. A disconnected or congested
 
 ## Mechanical networks
 
-Before electricity, waterwheels and windmills provide site-local mechanical capacity.
+Before electricity, waterwheels and windmills provide facility-local mechanical capacity.
 
-- Adjacent/site-linked machines draw from a shared mechanical-power pool.
+- Adjacent or explicitly linked machines draw from a shared mechanical-power pool.
 - Short shaft/belt extensions add range and loss.
 - A dynamo consumes mechanical capacity and supplies local electrical capacity.
 - Avoid individual gear alignment or detailed shaft routing.
@@ -119,7 +119,7 @@ Progression may include lead-acid, lithium-ion, sodium-ion, and flow batteries. 
 
 ### Pumped hydro
 
-High capital and site restricted; long life and large capacity. Uses regional water but operates as a mostly closed transfer between reservoirs subject to loss/evaporation.
+High capital and location restricted; long life and large capacity. Uses regional water but operates as a mostly closed transfer between reservoirs subject to loss/evaporation.
 
 ### Thermal storage
 
@@ -133,7 +133,7 @@ High capital and site restricted; long life and large capacity. Uses regional wa
 - Low round-trip efficiency
 - Valuable long-duration/seasonal capacity and industrial compatibility
 
-### Compressed air or depleted-site storage
+### Compressed air or depleted-location storage
 
 A later use for appropriate mines or reservoirs; moderate/long duration and geography dependent.
 

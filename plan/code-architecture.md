@@ -70,7 +70,7 @@ src/
   application/       Startup, lifecycle, and application-facing operations
   content/           Loading, validating, and indexing data definitions
   simulation/        Runtime state and deterministic game systems
-  generation/        Seeded sector reserve, woodland, water, town, site, planted-forest, and weather generation
+  generation/        Seeded sector reserve, woodland, water, town, physical-feature, planted-forest, and weather generation
   rendering/         Canvas map, camera, spatial hit testing, and visual effects
   ui/                HTML/CSS panels, dialogs, tooltips, and research display
   persistence/       Save encoding, loading, versioning, and migrations
@@ -187,7 +187,7 @@ Game content lives in JSON or equivalent data files grouped by concern, includin
 - Extraction-facility and energy-storage types
 - Upgrades and retrofits
 - Research nodes
-- Sector, site, climate, and town archetypes
+- Sector, climate, facility-placement, and town archetypes
 - Demand profiles
 - Contract templates
 - Seasonal and weather profiles
@@ -255,7 +255,7 @@ Runtime campaign state should be serializable and contain IDs plus changing valu
 Broad state areas include:
 
 - Clock and weather
-- Sectors, placement sites, and structured reserve/endowment records
+- Sectors with identified physical features and structured reserve/endowment records
 - Player-planted forest instances
 - Towns and contracts
 - Facility instances
@@ -265,6 +265,8 @@ Broad state areas include:
 - Research and unlock progress
 - Construction and maintenance work
 - Money and performance history
+
+Each sector owns a typed feature collection for things that physically exist. Woodland features own regular extents, facility features reference independent facility entities, town features reference independent town entities, and irregular reservoir features own explicit cells with each feature defining one visual join group. Regular features use a canonical top-left origin plus positive dimensions. This logical cell geometry is runtime and save state; it contains no canvas pixels, sprite IDs, or atlas anchors.
 
 ### Systems
 
@@ -313,12 +315,13 @@ Responsibilities:
 - Generate zero or more towns per sector
 - Include deliberately empty sectors and occasional multi-town sectors
 - Generate structured finite-reserve, innate-woodland, and local-water sector records
-- Place typed facility sites independently of natural-resource state
+- Evaluate facility placement rules against candidate cells and current sector state when construction is requested
+- Generate stable feature IDs and validated logical geometry for physical woodland, towns, constructed facilities, and irregular reservoirs
 - Create optional player-planted forests as the only separate natural-resource instances
 - Create initial connections and import access
 - Validate that the generated campaign has a viable progression path
 
-Generation must not create deposit entities or deposit runtime IDs. Generation output is semantic game data. It must not contain canvas coordinates or sprite IDs beyond optional presentation hints.
+Generation must not create deposit entities or deposit runtime IDs. Generation output is semantic game data. Sector-grid origins, dimensions, and occupied cells are allowed because they affect placement and topology; canvas coordinates, sprite IDs, and atlas anchors are not.
 
 The visual map layout can be generated separately from gameplay content so presentation changes do not alter campaign rules.
 
@@ -338,9 +341,11 @@ The canvas renders the spatial game world:
 
 Rendering reads state but does not advance the simulation or modify it.
 
+Scene projection resolves physical sector features into renderer-facing cells. Regular features place woodland, town, or constructed-facility visuals from the canonical origin, while reservoir cells are autotiled only against cells in the same reservoir feature. Empty construction opportunities are not serialized features and are never projected as persistent objects.
+
 The canonical back-to-front order is biome background, ground-level overlays such as reservoir water, persistent resources/entities, facilities, and transient interaction graphics. Object sprites must not repaint the full biome tile. The built waterwheel may retain its local river/bank foreground because that scenery is part of the facility composition.
 
-Site tags and placement opportunities remain semantic state. Generic and waterwheel sites have no persistent placeholder art: when construction mode is active, placement rules produce eligible cells or footprints and the renderer draws a faint outline over them. Innate woodland visuals are projected from sector state; planted woodland visuals are projected from planted-forest instances; both disappear at terminal depletion. See `plan/sprites-and-atlases.md` for the complete layer and atlas contract.
+Facility definitions reference registered placement rules. When construction mode is active, the application evaluates those rules against candidate cells, ownership, occupancy, research, biome access, adjacent physical features, and other current sector state. The renderer receives eligible footprints and draws transient outlines; empty opportunities are not campaign entities. Innate woodland visuals are projected from woodland features; planted woodland visuals are projected from planted-forest instances; both disappear at terminal depletion. See `plan/sprites-and-atlases.md` for the complete layer and atlas contract.
 
 Spatial selection and camera movement may live near rendering because they depend on screen/world coordinates. A selected object is then exposed to the application/UI layer by stable runtime ID.
 
@@ -400,12 +405,14 @@ Save data should include:
 - Content/version compatibility information
 - Random seed
 - Serializable runtime state
+- Stable sector feature IDs and logical origins, dimensions, and occupied cells
 - Player settings that genuinely belong to the campaign
 
 It should not include:
 
 - DOM or canvas objects
 - Cached rendering data
+- Atlas rectangles, sprite anchors, and screen or canvas coordinates
 - Duplicated immutable definitions
 - Subscriptions or callbacks
 
@@ -533,7 +540,7 @@ The first code should establish boundaries needed by the vertical slice:
 1. Validated content loading
 2. Fixed simulation clock
 3. Serializable campaign state
-4. Sector/town/site generation
+4. Sector, town, and physical-feature generation
 5. Timber, forestry, mechanical power, and research
 6. Iron, copper, dynamo, and first electricity
 7. Town connection and contract settlement

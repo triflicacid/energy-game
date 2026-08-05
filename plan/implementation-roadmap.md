@@ -13,11 +13,11 @@ The sprite-atlas pipeline, world art, reservoir-mask selector, application canva
 Implement rendering in this order:
 
 1. ✅ **U01a — Atlas drawing foundation:** load/decode the generated world atlas once with an injectable image boundary for tests; draw typed source rectangles with anchors and nearest-neighbor scaling; handle device-pixel-ratio resizing.
-2. ✅ **U01b — Read-only world scene:** project campaign state plus content definitions into deterministic logical cells and draw commands; preserve semantic site-template identity; place towns through deterministic layout data; no canvas pixels or atlas coordinates in simulation state.
-3. ✅ **U01c — Layered centre-sector composition:** draw opaque biome cells, then reservoir/ground overlays, physical resources and towns, facilities, and finally transient effects; no generic or waterwheel site placeholder art; `Application` eagerly loads bundled content, builds catalog, and creates the initial campaign state.
+2. ✅ **U01b — Read-only world scene:** project campaign state plus content definitions into deterministic logical cells and draw commands; sector-owned features represent existing woodland, towns, reservoirs, and constructed facilities with validated geometry and entity references; no canvas pixels or atlas coordinates in simulation state.
+3. ✅ **U01c — Layered centre-sector composition:** draw opaque biome cells, then reservoir/ground overlays, physical resources and towns, facilities, and finally transient effects; empty candidate locations are not rendered; `Application` eagerly loads bundled content, builds catalog, and creates the initial campaign state.
 4. ✅ **Camera core (advance work from U01e):** world/screen transforms with DPR support; scroll-to-zoom toward cursor with configurable step (10%); unbounded click-drag pan in both sector and campaign map views; two view modes on one canvas (sector detail and campaign map placeholder); `M` key toggle; shift+scroll-out transition to campaign map at a tunable minimum zoom; shift+scroll-in or click to re-enter sector; `CameraState.ts` pure math module with full unit test coverage.
-5. ✅ **U01di — Reservoir autotile variants:** select `reservoir-water-00` through `reservoir-water-0f` from cardinal neighbours in the same visual join group; ignore diagonal-only contact; use deterministic rendering fixtures.
-6. ✅ **U01dii — Town growth variants:** select `town-tier-1` through `town-tier-6` from presentation growth state with `town` fallback; use deterministic rendering fixtures.
+5. ✅ **U01di — Reservoir autotile variants:** select `reservoir-water-00` through `reservoir-water-0f` from cardinal neighbours within each reservoir feature's explicit-cell join group; ignore diagonal-only and cross-feature contact.
+6. ✅ **U01dii — Town growth variants:** select `town-tier-1` through `town-tier-6` from the town feature's presentation tier with `town` fallback; the feature references the independent town entity.
 7. **U01e (remainder) — Interaction rendering:** spatial hit testing, selection rendering, placement footprint previews, and faint construction-suitability outlines supplied by placement logic; depends on U02 for application-layer placement queries.
 
 The first useful rendering checkpoint was U01c: the centre sector visibly demonstrates the biome-plus-transparent-overlay model with forest, town, and built-facility examples. The camera core is operational. U01di and U01dii are complete; next is the interaction remainder of U01e.
@@ -151,14 +151,14 @@ Content:
 
 - 8–12 sector graph
 - Small initially accessible area around a centre sector; the rest begins as frontier/unknown
-- Sector archetypes, placement sites, finite reserve/endowment records, innate woodland, local water, and climate
+- Sector archetypes, finite reserve/endowment records, innate woodland, local water, climate, and registered facility placement rules evaluated against candidate footprints
 - Optional planted forests as the only separate natural-resource instances; no generated deposit entities
 - Explorer research tiers controlling maximum distance from the centre
 - Separate data-defined biome exploration and construction requirements
 - Explored/surveyed/unlocked/buildable sector states
 - Money-based sector acquisition with itemized distance and biome/desirability pricing
 - Zero-to-many independent generated towns per sector, including deliberately empty sectors and some multi-town sectors
-- Player town founding at valid settlement sites without internal town management
+- Player town founding on valid candidate footprints without internal town management
 - Substations and capacity-limited interconnections
 - Automatic dispatch and simple policies
 - Battery and reservoir storage

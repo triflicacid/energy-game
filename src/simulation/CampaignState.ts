@@ -6,13 +6,13 @@ import type { ClockSerialState } from "./SimulationClock";
 import type { HistoryEntry } from "./EventHistory";
 
 /** current format version; increment on breaking state schema changes */
-export const CAMPAIGN_STATE_VERSION = 4;
+export const CAMPAIGN_STATE_VERSION = 6;
 
 /** serialized per-entity id counter values */
 export type IdCounterStates = {
   readonly sectors: number;
+  readonly features: number;
   readonly towns: number;
-  readonly sites: number;
   readonly facilities: number;
   readonly contracts: number;
   readonly constructionJobs: number;
@@ -34,36 +34,67 @@ export type ResearchProgressState = {
   readonly progress: Readonly<Record<string, number>>;
 };
 
-/** serialized sector instance; content definition referenced by id */
+/** a canonical sector grid position measured from the top left cell */
 export type CellSerialState = {
   readonly col: number;
   readonly row: number;
 };
 
+/** supported visual growth tiers for a town feature */
 export type TownVisualTier = 1 | 2 | 3 | 4 | 5 | 6;
 
-/** presentation-only town placement/tier fixture owned by the sector state */
-export type TownPresentationCellSerialState = CellSerialState & {
+/** dimensions of a regular rectangular sector feature */
+export type FeatureDimensionsSerialState = {
+  readonly width: number;
+  readonly height: number;
+};
+
+/** spatial extent of existing innate woodland */
+export type WoodlandFeatureSerialState = {
+  readonly id: string;
+  readonly kind: "woodland";
+  readonly origin: CellSerialState;
+  readonly dimensions: FeatureDimensionsSerialState;
+};
+
+/** spatial placement of an existing constructed facility */
+export type FacilityFeatureSerialState = {
+  readonly id: string;
+  readonly kind: "facility";
+  readonly facilityId: string;
+  readonly origin: CellSerialState;
+  readonly dimensions: FeatureDimensionsSerialState;
+};
+
+/** spatial placement and visual tier of a town entity */
+export type TownFeatureSerialState = {
+  readonly id: string;
   readonly kind: "town";
   readonly townId: string;
+  readonly origin: CellSerialState;
   readonly tier?: TownVisualTier;
 };
 
-/** presentation-only reservoir tile fixture owned by the sector state */
-export type ReservoirPresentationCellSerialState = CellSerialState & {
+/** one irregular reservoir and its complete visual join group */
+export type ReservoirFeatureSerialState = {
+  readonly id: string;
   readonly kind: "reservoir";
+  readonly cells: readonly CellSerialState[];
 };
 
-/** presentation-only cell data generated per sector and consumed by rendering */
-export type PresentationCellSerialState =
-  | TownPresentationCellSerialState
-  | ReservoirPresentationCellSerialState;
+/** typed spatial geometry owned by a sector */
+export type SectorFeatureSerialState =
+  | WoodlandFeatureSerialState
+  | FacilityFeatureSerialState
+  | TownFeatureSerialState
+  | ReservoirFeatureSerialState;
 
+/** serialized sector instance with semantic spatial features */
 export type SectorSerialState = {
   readonly id: string;
   readonly definitionId: string;
   readonly accessState: SectorAccessState;
-  readonly presentationCells: readonly PresentationCellSerialState[];
+  readonly features: readonly SectorFeatureSerialState[];
 };
 
 /** serialized town instance */
@@ -72,21 +103,11 @@ export type TownSerialState = {
   readonly sectorId: string;
 };
 
-/** serialized site within a sector */
-export type SiteSerialState = {
-  readonly id: string;
-  readonly sectorId: string;
-  /** stable template identifier from SiteTemplateDef; used to recover spatial position */
-  readonly templateId: string;
-  readonly tags: readonly string[];
-  readonly facilityId: string | null;
-};
-
 /** serialized facility instance; content definition referenced by id */
 export type FacilitySerialState = {
   readonly id: string;
   readonly definitionId: string;
-  readonly siteId: string;
+  readonly sectorId: string;
 };
 
 /** serialized contract instance; content definition referenced by id */
@@ -111,7 +132,6 @@ export type CampaignState = {
   inventory: InventoryState;
   research: ResearchProgressState;
   sectors: Readonly<Record<string, SectorSerialState>>;
-  sites: Readonly<Record<string, SiteSerialState>>;
   towns: Readonly<Record<string, TownSerialState>>;
   facilities: Readonly<Record<string, FacilitySerialState>>;
   contracts: Readonly<Record<string, ContractSerialState>>;
@@ -137,8 +157,8 @@ export function createCampaignState(opts: CreateCampaignOptions): CampaignState 
     clock: { tick: 0, gameTime: 0, paused: true, speed: 1 },
     idCounters: {
       sectors: 0,
+      features: 0,
       towns: 0,
-      sites: 0,
       facilities: 0,
       contracts: 0,
       constructionJobs: 0,
@@ -147,7 +167,6 @@ export function createCampaignState(opts: CreateCampaignOptions): CampaignState 
     inventory: { quantities: {} },
     research: { completed: [], progress: {} },
     sectors: {},
-    sites: {},
     towns: {},
     facilities: {},
     contracts: {},

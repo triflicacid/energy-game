@@ -42,7 +42,6 @@ export {
 export type {
   SectorId,
   TownId,
-  SiteId,
   FacilityId,
   ContractId,
   ConstructionJobId,
@@ -53,7 +52,6 @@ export {
   IdCounter,
   makeSectorId,
   makeTownId,
-  makeSiteId,
   makeFacilityId,
   makeContractId,
   makeConstructionJobId,

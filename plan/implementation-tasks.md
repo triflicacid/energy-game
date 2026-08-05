@@ -13,10 +13,10 @@ EnergyGame contains tested foundation, content, simulation, application-shell, s
 - `A00` ✅ source sprites, deterministic atlas packer, typed descriptors, explicit category rows, and reservoir-mask helpers.
 - `U00` ✅ application canvas, DOM overlay root, frame lifecycle, pause/speed controls, renderer disposal boundary, and keyboard platform layer.
 - `U01a` ✅ `AtlasLoader` with injectable image boundary; `WorldAtlasPainter` draws sprites by semantic ID with anchor offset; DPR-aware `resizeBackingBuffer`; atlas error/loading fallbacks.
-- `U01b` ✅ `WorldScene` / `SceneCell` immutable scene model; `SceneProjector.projectSectorScene` pure function; `SiteSerialState.templateId` preserves template identity; `TownPresentationLayouts` deterministic town grid positions; 402 tests passing at completion.
+- `U01b` ✅ `WorldScene` / `SceneCell` immutable scene model; `SceneProjector.projectSectorScene` pure function; validated sector features represent existing woodland, towns, reservoirs, and constructed facilities with stable IDs and logical geometry.
 - `U01c` ✅ `CanvasRenderer` draws layered biome → ground overlays → entities → facilities using `WorldAtlasPainter`; `Application` eagerly loads bundled content, builds `IndexedCatalog`, and creates the initial `CampaignState` with the centre sector stamped in.
-- `U01di` ✅ deterministic reservoir fixture layout in `SceneProjector`; cardinal-mask autotile selection (`reservoir-water-00`…`0f`) for shared join-group neighbors; diagonal-only and cross-group adjacency do not connect.
-- `U01dii` ✅ deterministic town-tier fixture support in `SceneProjector`; town sprites resolve to `town-tier-1`…`town-tier-6` from presentation tier state with `town` fallback when tier is absent.
+- `U01di` ✅ explicit reservoir features in sector state; cardinal-mask autotile selection (`reservoir-water-00`…`0f`) within each feature's cell join group; diagonal-only and cross-feature adjacency do not connect.
+- `U01dii` ✅ town features reference independent town entities and carry deterministic origins and visual tiers; sprites resolve to `town-tier-1`…`town-tier-6` with `town` fallback when tier is absent.
 - **Camera core** ✅ `CameraState.ts` pure math (world/screen transforms, zoom-toward-point, clamp helpers, 29 tests); `CanvasRenderer` has scroll-to-zoom (10% step, max 10×), unbounded drag-to-pan in both views, sector detail / campaign map view modes, `M` key toggle, shift+scroll transition to campaign map at `0.5 × fitZoom`, initial zoom at `2 × fitZoom` for immediate panning room.
 - **Campaign map placeholder** ✅ dark background with a biome-coloured flat-top hex node, sector name label, and return-hint text; drag-pan is unbounded.
 - **Design notes recorded**: mechanical workshop tier progression (`plan/power-plants.md`); camera and navigation model including two view modes and control scheme (`plan/map-and-regions.md`).
@@ -37,7 +37,7 @@ Every delegated task must preserve these decisions unless the owner explicitly c
 9. **Canvas plus DOM:** canvas renders the spatial sector map; HTML/CSS renders panels, dialogs, controls, tables, and tooltips.
 10. **Research view:** prefer HTML nodes and SVG edges; do not build canvas buttons.
 11. **Sector model:** a sector may contain zero, one, or multiple towns. Towns are independent runtime entities.
-12. **No realistic terrain:** sectors and typed sites replace generated lakes, rivers, roads, and terrain simulation.
+12. **No realistic terrain:** sector state and registered placement rules replace generated lakes, rivers, roads, construction sites, and terrain simulation.
 13. **No freight routing:** materials initially use a company-wide inventory and automatic delivery/import abstraction.
 14. **No city builder:** towns expose energy demand, growth, and contracts but do not expose individual streets, buildings, or citizens.
 15. **Scope discipline:** do not add multiplayer, a full commodity economy, AC electrical simulation, or speculative framework infrastructure.
@@ -251,7 +251,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 **Deliverables:**
 
 - Document and implement canonical internal units for simulation hours, money, mechanical power, electrical power, energy, material quantities, and water.
-- Add stable runtime ID types/generation for sectors, towns, sites, facilities, contracts, and construction jobs.
+- Add stable runtime ID types/generation for sectors, towns, facilities, contracts, and construction jobs.
 - Keep display formatting separate.
 
 **Acceptance:**
@@ -418,15 +418,17 @@ Each research facility independently assigns its output to a target node. The `R
 
 - Data-defined centre sector with distance zero.
 - Initially explored, surveyed, unlocked, and buildable.
-- One forest site, one waterwheel site, and one generated nearby town.
+- One physical woodland feature, one reservoir, one generated nearby town, and empty space where a waterwheel can later satisfy its adjacency rule.
 - No procedural map generation yet.
 
 **Acceptance:**
 
 - Sector contains independent town IDs rather than embedded aggregate town state.
-- Site eligibility is validated through content tags.
+- Facility definitions select registered placement rules that evaluate candidate footprints from current sector state.
+- Sector-owned features provide stable IDs and validated spatial placement for physical woodland, towns, constructed facilities, and irregular reservoirs.
+- Regular features use a top-left logical origin and positive dimensions; irregular reservoirs list their occupied cells.
 
-**Follow-up:** C02 and V00 migrate the baseline forest-site fixture to sector-owned innate woodland plus a separate forestry-facility placement opportunity.
+**Follow-up:** C02 and V00 extend the baseline woodland feature with biomass, viability, lifecycle state, and construction-time forestry placement queries.
 
 ## V00 — Forestry and timber
 
@@ -437,7 +439,7 @@ Each research facility independently assigns its output to a target node. The `R
 **Deliverables:**
 
 - Sector-owned innate woodland current/max biomass, viability, and growth.
-- Migration of the M00 forest-site fixture and existing forest rendering to the agreed sector-state model.
+- Extension of the M00 woodland feature and rendering to the agreed biomass and lifecycle model.
 - Forestry operation selecting and harvesting innate woodland or a player-planted forest into the single company inventory.
 - Player planting that creates the only separate natural-resource instance, with age, current/max biomass, condition, and lifecycle state.
 - Sustainable and over-harvest behavior.
@@ -464,7 +466,7 @@ Each research facility independently assigns its output to a target node. The `R
 
 - Site-local mechanical generation and consumption pool.
 - Waterwheel consumes construction resources and provides mechanical capacity.
-- **Waterwheel water adjacency:** a waterwheel produces mechanical power only when at least one of its four cardinal grid neighbours is a reservoir water cell belonging to the same sector. If the adjacency is absent (drained or removed reservoir), output is zero. This is a tick-level check against sector water-cell state, not a placement constraint.
+- **Waterwheel water adjacency:** a waterwheel produces mechanical power only when at least one of its four cardinal grid neighbours is a cell in a reservoir feature belonging to the same sector. If the adjacency is absent (drained or removed reservoir), output is zero. This is a tick-level check against sector water state, not a placement constraint.
 - Mechanical workshop requests capacity and reduces operation proportionally or stops when unavailable, according to the content behavior.
 - No shaft geometry or canvas dependency.
 
@@ -536,7 +538,7 @@ Integrate a tested scenario:
 
 **Deliverables:**
 
-- Individual named source sprites for the initial centre-sector slice: opaque biome backgrounds; transparent forest, town-tier, reservoir, and facility overlays; and no generic/waterwheel site placeholders.
+- Individual named source sprites for the initial centre-sector slice: opaque biome backgrounds and transparent woodland, town-tier, reservoir, and facility overlays; empty candidate locations have no placeholder sprites.
 - Deterministic script that validates and packs sources into a building/world atlas.
 - Explicit, validated atlas rows for biome backgrounds, reservoir autotiles, world/entity overlays, and structures.
 - Generated TypeScript descriptor containing semantic sprite IDs, source rectangles, anchors, and visual bounds.
@@ -594,11 +596,11 @@ Integrate a tested scenario:
 **Deliverables:**
 
 - Define a renderer-facing immutable scene/read-model containing logical cell positions, biome visual IDs, persistent resource/entity visuals, facilities, and optional transient overlays.
-- Build the centre-sector scene deterministically from read-only campaign state, indexed content definitions, and presentation layout data.
-- Preserve or expose stable site-template/layout identity at the generation/application boundary where needed; do not match runtime sites to templates by array position.
-- Place towns through a deterministic presentation layout because town simulation state intentionally has no street/building coordinates.
+- Build the centre-sector scene deterministically from read-only campaign state, indexed content definitions, and typed sector features.
+- Project only physical sector features. Facility features are created when construction creates a facility and own its resolved origin and dimensions; empty candidate locations remain transient placement-query results.
+- Place independent town entities through town features with canonical origins because town simulation state intentionally has no street/building coordinates.
 - Keep canvas pixels, camera state, atlas rectangles, decoded images, and caches out of simulation and save data.
-- Emit a forest visual for standing forest, but no visual command for empty `general-site` or `waterwheel-site` suitability.
+- Emit a woodland visual for standing forest, but no visual command for empty candidate construction locations.
 
 **Acceptance:** equal semantic input produces deeply equal scene commands; shuffled collection iteration does not alter output; missing definitions/layout identity fail visibly in development; projection does not mutate campaign state or content.
 
@@ -618,7 +620,7 @@ Integrate a tested scenario:
 - Use deterministic layer, base-row/anchor-row, and stable-ID tie-breakers.
 - Render a facility only when an instance or explicit under-construction state exists; suitability tags alone never create building art.
 
-**Acceptance:** a deterministic centre-sector fixture shows the temperate background, forest, town, one-cell waterwheel, and two-cell workshop in the intended order; draw-command tests verify ordering and anchors; transparent areas reveal the biome; no placeholder site art appears.
+**Acceptance:** deterministic fixtures show the temperate background, woodland, town, one-cell waterwheel, and two-cell workshop in the intended order; draw-command tests verify ordering and anchors; transparent areas reveal the biome; empty candidate locations have no placeholder art.
 
 ## ✅ U01di — Reservoir visual variants
 
@@ -628,8 +630,8 @@ Integrate a tested scenario:
 
 **Deliverables:**
 
-- Select `reservoir-water-00` through `reservoir-water-0f` from north/east/south/west neighbors in the same visual join group.
-- Ignore diagonal-only contact and never join distinct reservoirs merely because cells touch.
+- Select `reservoir-water-00` through `reservoir-water-0f` from north/east/south/west neighbors within one reservoir feature's explicit cells.
+- Treat each reservoir feature as a distinct visual join group; ignore diagonal-only contact and never join separate features merely because cells touch.
 - Use deterministic rendering fixtures until water extent is supplied by gameplay; do not add fake production simulation state to demonstrate art.
 
 **Acceptance:** all 16 reservoir autotile masks render at correct positions with matching shared edges; distinct join groups and diagonal-only contacts remain disconnected; visual reservoir area does not determine capacity or connectivity.
@@ -642,7 +644,7 @@ Integrate a tested scenario:
 
 **Deliverables:**
 
-- Select `town-tier-1` through `town-tier-6` from presentation growth state and use `town` when no tier can be resolved.
+- Select `town-tier-1` through `town-tier-6` from the town feature's presentation tier and use `town` when no tier can be resolved.
 - Use deterministic rendering fixtures until town growth is supplied by gameplay; do not add fake production simulation state to demonstrate art.
 
 **Acceptance:** each of the six tier sprites and the fallback `town` sprite is exercised by a fixture; tier selection is driven only by presentation state, not simulation internals; rendering remains deterministic for equal scene state.
@@ -682,7 +684,7 @@ Integrate a tested scenario:
 
 - Time controls.
 - Global company-inventory display with resolved resource icon, localized label, quantity, and unit for every row.
-- Selected sector/site/facility details.
+- Selected sector/feature/facility details.
 - Minimal build controls.
 - Minimal research list or graph using HTML controls; SVG may draw dependency edges.
 - Per-facility research assignment control (select which node a workshop targets).
@@ -771,7 +773,7 @@ Integrate a tested scenario:
 - Abstract reservoir facility adding finite capture, retention/effective recharge, usable storage, and withdrawal/release capacity.
 - Waterwheel/hydro availability from flow/storage.
 - Priority behavior during shortage.
-- Presentation-facing reservoir extent/join-group state where needed for autotile selection; this state must not calculate or override capacity or water balance.
+- Update the reservoir feature's explicit cells where gameplay changes presentation extent; each feature remains one visual join group and its geometry must not calculate or override capacity or water balance.
 
 **Acceptance:** water balance reconciles every tick; construction alone leaves water unchanged; a reservoir starts empty unless initial water is explicitly accounted and otherwise fills only from later captured inflow; captured water never exceeds available inflow or storage capacity; withdrawal is rate/capacity limited; no generated lake/river terrain; visual reservoir shape does not determine storage or connectivity; rainy-season fill, drought, empty, evaporation, and overflow/spill cases are tested.
 
@@ -810,7 +812,7 @@ Integrate a tested scenario:
 **Deliverables:**
 
 - Generate connected 8–12 sector graph from a seed.
-- Assign centre, biome, placement sites, structured finite-reserve/endowment records, innate woodland viability, sector-water parameters, and zero-to-many town placeholders.
+- Assign centre, biome, structured finite-reserve/endowment records, innate woodland viability, sector-water parameters, physical features, and zero-to-many town placeholders; placement suitability remains a query over generated state.
 - Create optional planted forests as the only separate natural-resource instances; never create deposit entities or deposit IDs.
 - Keep gameplay graph separate from visual layout.
 - Viability validator and deterministic fixtures.
@@ -837,7 +839,7 @@ Integrate a tested scenario:
 **Deliverables:**
 
 - Generate zero, one, or multiple independent town instances per sector.
-- Found a town at a valid site through an explicit application method.
+- Found a town on a valid candidate footprint through an explicit application method.
 - Founding cost/time, starting demand, water/power prerequisites, and growth defined by content.
 - No internal town-building management.
 

@@ -1,40 +1,44 @@
 {
   "idCounters": {
     "sectors": 1,
-    "sites": 2,
-    "towns": 1
+    "features": 3,
+    "towns": 1,
+    "facilities": 0
   },
   "sectors": {
     "sector:1": {
       "id": "sector:1",
       "definitionId": "centre",
       "accessState": "buildable",
-      "presentationCells": [
-        { "kind": "town", "townId": "town:1", "col": 6, "row": 6, "tier": 1 },
-        { "kind": "reservoir", "col": 9, "row": 4 },
-        { "kind": "reservoir", "col": 10, "row": 4 },
-        { "kind": "reservoir", "col": 9, "row": 5 },
-        { "kind": "reservoir", "col": 10, "row": 5 },
-        { "kind": "reservoir", "col": 10, "row": 6 }
+      "features": [
+        {
+          "id": "feature:1",
+          "kind": "woodland",
+          "origin": { "col": 3, "row": 8 },
+          "dimensions": { "width": 1, "height": 1 }
+        },
+        {
+          "id": "feature:2",
+          "kind": "town",
+          "townId": "town:1",
+          "origin": { "col": 6, "row": 6 },
+          "tier": 1
+        },
+        {
+          "id": "feature:3",
+          "kind": "reservoir",
+          "cells": [
+            { "col": 9, "row": 4 },
+            { "col": 10, "row": 4 },
+            { "col": 9, "row": 5 },
+            { "col": 10, "row": 5 },
+            { "col": 10, "row": 6 }
+          ]
+        }
       ]
     }
   },
-  "sites": {
-    "site:1": {
-      "id": "site:1",
-      "sectorId": "sector:1",
-      "templateId": "centre-forest-1",
-      "tags": ["forest"],
-      "facilityId": null
-    },
-    "site:2": {
-      "id": "site:2",
-      "sectorId": "sector:1",
-      "templateId": "centre-waterwheel-1",
-      "tags": ["waterwheel-site"],
-      "facilityId": null
-    }
-  },
+  "facilities": {},
   "towns": {
     "town:1": {
       "id": "town:1",

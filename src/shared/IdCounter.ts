@@ -9,9 +9,6 @@ export type SectorId = Brand<string, "SectorId">;
 /** unique runtime identifier for a town */
 export type TownId = Brand<string, "TownId">;
 
-/** unique runtime identifier for a site within a sector */
-export type SiteId = Brand<string, "SiteId">;
-
 /** unique runtime identifier for a facility instance */
 export type FacilityId = Brand<string, "FacilityId">;
 
@@ -61,10 +58,6 @@ export function makeTownId(counter: IdCounter): TownId {
   return `town:${counter.next()}` as TownId;
 }
 
-/** creates a new SiteId using counter */
-export function makeSiteId(counter: IdCounter): SiteId {
-  return `site:${counter.next()}` as SiteId;
-}
 
 /** creates a new FacilityId using counter */
 export function makeFacilityId(counter: IdCounter): FacilityId {

@@ -35,7 +35,7 @@ function validFacility(overrides: Record<string, unknown> = {}): Record<string, 
   return {
     id: "test-facility",
     behaviorId: "forestGrowth",
-    validSiteTags: ["forest"],
+    placementRuleId: "woodland-access",
     constructionCost: [{ resourceId: "timber", qty: 10 }],
     constructionMoneyBase: 100,
     constructionTimeHours: 24,
@@ -249,11 +249,11 @@ describe("ContentLoader facility validation", () => {
     expect(result.issues.some((i) => i.path === "behaviorId")).toBe(true);
   });
 
-  it("rejects a non-array validSiteTags", () => {
-    const result = load(undefined, undefined, [validFacility({ validSiteTags: "forest" })]);
+  it("rejects a missing placementRuleId", () => {
+    const result = load(undefined, undefined, [validFacility({ placementRuleId: undefined })]);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.issues.some((i) => i.path === "validSiteTags")).toBe(true);
+    expect(result.issues.some((i) => i.path === "placementRuleId")).toBe(true);
   });
 
   it("rejects a negative constructionMoneyBase", () => {
@@ -343,7 +343,6 @@ describe("ContentLoader sector validation", () => {
         diameter: 12,
         gridQ: 0,
         gridR: 0,
-        siteTemplates: [{ templateId: "s1", tags: ["forest"], x: -3, y: 2 }],
         hasTown: true,
         initialAccessState: "buildable",
       }],
@@ -358,7 +357,7 @@ describe("ContentLoader sector validation", () => {
       facilities: [validFacility()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [], hasTown: false, initialAccessState: "buildable" }],
+      sectors: [{ name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, hasTown: false, initialAccessState: "buildable" }],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -372,7 +371,7 @@ describe("ContentLoader sector validation", () => {
       facilities: [validFacility()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [], hasTown: false, initialAccessState: "flying" }],
+      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, hasTown: false, initialAccessState: "flying" }],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -386,7 +385,7 @@ describe("ContentLoader sector validation", () => {
       facilities: [validFacility()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: -1, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [], hasTown: false, initialAccessState: "buildable" }],
+      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: -1, diameter: 10, gridQ: 0, gridR: 0, hasTown: false, initialAccessState: "buildable" }],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -400,7 +399,7 @@ describe("ContentLoader sector validation", () => {
       facilities: [validFacility()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 0, gridQ: 0, gridR: 0, siteTemplates: [], hasTown: false, initialAccessState: "buildable" }],
+      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 0, gridQ: 0, gridR: 0, hasTown: false, initialAccessState: "buildable" }],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -414,7 +413,7 @@ describe("ContentLoader sector validation", () => {
       facilities: [validFacility()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 1.5, gridR: 0, siteTemplates: [], hasTown: false, initialAccessState: "buildable" }],
+      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 1.5, gridR: 0, hasTown: false, initialAccessState: "buildable" }],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -428,49 +427,10 @@ describe("ContentLoader sector validation", () => {
       facilities: [validFacility()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 1, diameter: 10, gridQ: -2, gridR: -3, siteTemplates: [], hasTown: false, initialAccessState: "explored" }],
+      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 1, diameter: 10, gridQ: -2, gridR: -3, hasTown: false, initialAccessState: "explored" }],
     });
     expect(result.ok).toBe(true);
   });
 
-  it("rejects a site template with a non-array tags field", () => {
-    const result = new ContentLoader().load({
-      resources: [validResource()],
-      recipes: [validRecipe()],
-      facilities: [validFacility()],
-      upgrades: [],
-      researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [{ templateId: "t1", tags: "forest", x: 0, y: 0 }], hasTown: false, initialAccessState: "buildable" }],
-    });
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.issues.some((i) => i.catalog === "sectors")).toBe(true);
-  });
-
-  it("rejects a site template with a missing x coordinate", () => {
-    const result = new ContentLoader().load({
-      resources: [validResource()],
-      recipes: [validRecipe()],
-      facilities: [validFacility()],
-      upgrades: [],
-      researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [{ templateId: "t1", tags: ["forest"], y: 0 }], hasTown: false, initialAccessState: "buildable" }],
-    });
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.issues.some((i) => i.catalog === "sectors" && i.path.includes(".x"))).toBe(true);
-  });
-
-  it("accepts negative site x and y coordinates", () => {
-    const result = new ContentLoader().load({
-      resources: [validResource()],
-      recipes: [validRecipe()],
-      facilities: [validFacility()],
-      upgrades: [],
-      researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [{ templateId: "t1", tags: ["forest"], x: -3, y: -2 }], hasTown: false, initialAccessState: "buildable" }],
-    });
-    expect(result.ok).toBe(true);
-  });
 });
 

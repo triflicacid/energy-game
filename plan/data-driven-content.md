@@ -26,7 +26,6 @@ Prefer separate JSON documents or logical catalogs:
 - `biomeArchetypes`
 - `explorationTiers`
 - `sectorPricing`
-- `siteTypes`
 - `climateProfiles`
 - `seasonProfiles`
 - `weatherTypes`
@@ -41,7 +40,7 @@ A build step may combine these into a production bundle after validation.
 
 `extractors` describe extraction-facility capabilities, not deposit entities. Sector archetype and generation data define finite reserve/endowment ranges, innate woodland, and local water. Planted-forest definitions provide the only separately instantiated natural-resource lifecycle. Resource definitions own required inventory icon references.
 
-Simulation and UI code must operate on capabilities, tags, typed definitions, and registered behavior IDs. It must not contain branches such as “if building is coal plant” or manually maintained lists of resource/research IDs. Adding an ordinary resource, recipe, research node, upgrade, town archetype, or plant variant should normally require data and assets only.
+Simulation and UI code must operate on capabilities, typed definitions, registered behavior IDs, and registered placement-rule IDs. It must not contain branches such as “if building is coal plant” or manually maintained lists of resource/research IDs. Adding an ordinary resource, recipe, research node, upgrade, town archetype, or plant variant should normally require data and assets only.
 
 ## Definition versus runtime state
 
@@ -52,7 +51,7 @@ Immutable content such as:
 - Name/localization ID
 - Construction cost and materials
 - Capacity and efficiency
-- Valid sites
+- Placement-rule ID and footprint requirements
 - Input/output resources
 - Required research
 - Upgrade IDs
@@ -62,7 +61,7 @@ Immutable content such as:
 
 Save-specific values such as:
 
-- Owner and sector/site
+- Owner and sector
 - Construction progress
 - Condition and age
 - Current output and dispatch mode
@@ -70,8 +69,11 @@ Save-specific values such as:
 - Installed upgrades
 - Maintenance schedule
 - Original/current material composition
+- Sector feature IDs, entity references, and logical geometry
 
 Never mutate shared definitions to represent one facility instance.
+
+Facility definitions name a registered placement rule. The application evaluates that rule against a proposed footprint and current sector state only when construction suitability is queried. Empty candidate locations are not persisted. Once construction creates a facility, a facility feature stores its canonical top-left origin and dimensions and references the independent facility entity. Town features similarly reference independent town entities, woodland features represent existing innate woodland, and irregular reservoir features store explicit cells.
 
 Sector reserves, innate woodland, and sector water are runtime sector state. Player-planted forests are separate runtime instances; finite deposits are not entities. The current scope has one company-wide material inventory and no sector, warehouse, extractor, or general facility inventories.
 
@@ -108,7 +110,7 @@ Do not place executable code or arbitrary expression strings in JSON. Use limite
 Common fields:
 
 - ID and type
-- Valid site/sector requirements
+- Registered placement-rule ID and sector/footprint requirements
 - Construction bill, money, and time
 - Required research
 - Global-inventory input/output resource references
@@ -179,7 +181,7 @@ A sector instance references:
 - Sector archetype
 - Biome archetype
 - Climate profile
-- Placement-site instances and structured sector reserve/endowment records
+- Physical spatial features and structured sector reserve/endowment records
 - Innate woodland and sector-local water state
 - References to separately instantiated player-planted forests
 - Neighbors and connection distance
@@ -187,6 +189,7 @@ A sector instance references:
 - Exploration, survey, acquisition, and construction status
 - Resolved acquisition price and its modifier breakdown
 - Generated parameter values within validated ranges
+- Typed spatial features for existing woodland, towns, constructed facilities, and irregular reservoirs
 
 Town instances are separate from sectors and reference:
 
@@ -196,7 +199,9 @@ Town instances are separate from sectors and reference:
 - Population/growth state
 - Whether generated at campaign creation or founded by the player
 
-Sector generation allows a configurable town-count distribution including zero. Town-founding definitions specify site requirements, initial costs, construction time, starting demand, growth rules, and eligible purposes/archetypes.
+A town's sector feature provides its logical origin and presentation tier while referencing the town by ID. Spatial placement does not embed contracts, demand, population, or other town simulation state into the sector.
+
+Sector generation allows a configurable town-count distribution including zero. Town-founding definitions specify candidate-footprint requirements, initial costs, construction time, starting demand, growth rules, and eligible purposes/archetypes.
 
 A biome archetype defines data-driven requirements and modifiers such as:
 
@@ -205,10 +210,10 @@ A biome archetype defines data-driven requirements and modifiers such as:
 - General construction research ID
 - Acquisition desirability multiplier
 - Construction and maintenance modifiers
-- Facility/site eligibility tags
+- Facility placement rules and biome eligibility tags
 - Environmental and seasonal behavior references
 
-Explorer-tier definitions map research IDs to maximum distance from the campaign centre. Sector-pricing data defines the base price, distance curve, biome/desirability multipliers, town/resource/site valuation, and scenario modifiers. Pricing logic consumes these definitions and exposes an itemized breakdown; no biome or research ID is hard-coded into the calculation.
+Explorer-tier definitions map research IDs to maximum distance from the campaign centre. Sector-pricing data defines the base price, distance curve, biome/desirability multipliers, town/resource/physical-feature valuation, and scenario modifiers. Pricing logic consumes these definitions and exposes an itemized breakdown; no biome or research ID is hard-coded into the calculation.
 
 A climate/season profile supplies normalized curves and distributions for temperature, wind, irradiance, rainfall/inflow, evaporation, and forest growth.
 
@@ -240,7 +245,7 @@ Detect:
 - Unit/category mismatch
 - Impossible recipes or zero-output loops
 - Research cycles and unreachable nodes
-- Facilities with no valid site
+- Facilities with no satisfiable placement rule
 - Upgrades that cannot apply or conflict incorrectly
 - Resources consumed before any local/import source exists
 - Missing decommission material mappings
@@ -258,6 +263,11 @@ Detect:
 - Recycling outputs that target finite reserves, woodland biomass, or sector water instead of company inventory
 - Reservoir definitions that create water, fill without accounted inflow, or describe direct regeneration without inflow
 - Missing or invalid planted-forest lifecycle visual mappings
+- Duplicate feature IDs or feature IDs not covered by their counters
+- Noninteger or out-of-bounds feature cells, nonpositive dimensions, and overlapping feature footprints
+- Missing, cross-sector, or multiply used facility and town feature references
+- Unknown or invalid facility placement-rule IDs
+- Duplicate cells within an irregular reservoir feature
 
 ## Generated reports
 

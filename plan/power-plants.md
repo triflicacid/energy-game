@@ -5,7 +5,7 @@
 Every plant definition should specify:
 
 - Research era and prerequisites
-- Construction bill of materials, cash, time, and valid site types
+- Construction bill of materials, cash, time, and placement-rule requirements
 - Mechanical/electrical/heat output and auxiliary consumption
 - Fuel, water, waste, and emissions
 - Minimum/maximum output, ramp rate, start time, and start cost
@@ -20,24 +20,24 @@ Older technologies retain niches; progression should not reduce to buying a univ
 
 ### Undershot waterwheel — Era 0
 
-- Low-head flowing-water site
+- Low-head flowing-water location
 - Timber construction
 - Produces local mechanical power
 - Cheap, inefficient, flow-dependent
-- **Grid adjacency rule:** a waterwheel site is only valid when at least one of its four cardinal neighbours is a reservoir water cell. The waterwheel produces no mechanical power if that adjacency is lost (e.g. the reservoir is drained or removed). This is enforced in placement validation (U02) and in mechanical-power tick logic (V01).
+- **Grid adjacency rule:** a proposed waterwheel footprint is suitable only when at least one of its four cardinal neighbours is a reservoir water cell. Suitability is evaluated when construction is queried; no waterwheel site entity exists beforehand. The waterwheel produces no mechanical power if that adjacency is later lost (e.g. the reservoir is drained or removed). This is enforced in placement validation (U02) and in mechanical-power tick logic (V01).
 
 Upgrades: improved paddles, timber bracing, debris screen, sluice control, reinforced axle, iron bearings, dynamo attachment.
 
 ### Overshot waterwheel — Era 0
 
-- Medium-head site or mill pond
+- Medium-head location or mill pond
 - More efficient at lower flow
 
 Upgrades: larger wheel, improved buckets, controlled mill race, iron rim/axle, enclosed gearing, dynamo.
 
 ### Wooden windmill — Era 0
 
-- Wind site
+- Wind-suitable location
 - Variable local mechanical power
 
 Upgrades: larger/adjustable sails, rotating cap, gearing, storm brake, iron reinforcement, dynamo.
@@ -75,23 +75,23 @@ Like towns, the mechanical workshop progresses through named tiers rather than b
 
 ### Industrial workshop — Era 3+
 
-Later tiers add electrical drive, automated feed, heat treatment, and specialist fabrication capabilities. Each tier is a successor facility at the same site, not a numeric upgrade, so it has a distinct sprite and construction cost.
+Later tiers add electrical drive, automated feed, heat treatment, and specialist fabrication capabilities. Each tier is a successor facility at the same location, not a numeric upgrade, so it has a distinct sprite and construction cost.
 
 ## Hydropower
 
 ### Iron waterwheel — Era 1
 
-Major rebuild retaining the water site. More durable and capable of driving a larger dynamo.
+Major rebuild retaining the water-access location. More durable and capable of driving a larger dynamo.
 
 ### Kaplan/Francis/Pelton water turbine — Era 3
 
-The site recommends low-, medium-, or high-head machinery. Upgrades include runner efficiency, electronic governor, cavitation resistance, fish-safe operation, and high-efficiency generator.
+Current water and location state recommends low-, medium-, or high-head machinery. Upgrades include runner efficiency, electronic governor, cavitation resistance, fish-safe operation, and high-efficiency generator.
 
 ### Small/run-of-river hydro — Era 3
 
 - Reliable and inexpensive to operate
 - Output follows flow and environmental release
-- Natural successor at early mill sites
+- Natural successor at early mill locations
 
 ### Reservoir hydro — Era 3–4
 
@@ -135,7 +135,7 @@ Mutually exclusive choices include low-wind versus storm-resistant rotor and gea
 
 ### Floating offshore wind — Era 6
 
-- Deep-water sites
+- Deep-water locations
 - Expensive platform and mooring
 
 Upgrades: shared floating substation, improved mooring, robotic inspection, integrated offshore electrolysis.
@@ -219,11 +219,11 @@ High efficiency through gas turbine plus waste-heat steam cycle. Upgrades includ
 
 ### Geothermal heat well — Era 2–3
 
-Provides district/process heat at a valid site.
+Provides district/process heat at a suitable location.
 
 ### Dry-steam plant — Era 3
 
-Rare high-quality site; direct steam turbine. Add wells, reinjection, corrosion/scaling control, and improved turbine.
+Rare high-quality location; direct steam turbine. Add wells, reinjection, corrosion/scaling control, and improved turbine.
 
 ### Flash-steam plant — Era 4
 
@@ -231,7 +231,7 @@ High-pressure hot-water resource; manages reservoir decline and reinjection.
 
 ### Binary-cycle plant — Era 4
 
-Works with lower temperatures using a secondary fluid; lower output but more possible sites and closed-loop operation.
+Works with lower temperatures using a secondary fluid; lower output but more possible locations and closed-loop operation.
 
 ### Enhanced geothermal — Era 5–6
 
@@ -257,7 +257,7 @@ Upgrades: tracking, bifacial modules, improved cells, smart inverters, cleaning,
 
 ### Concentrated solar power — Era 5
 
-High-solar regional site; produces heat and can use molten-salt storage after sunset. Dry cooling and higher-temperature receivers reduce water dependence or increase efficiency.
+High-solar regional location; produces heat and can use molten-salt storage after sunset. Dry cooling and higher-temperature receivers reduce water dependence or increase efficiency.
 
 ## Marine
 
@@ -267,7 +267,7 @@ Coastal mechanical power, later dynamo-compatible.
 
 ### Tidal barrage — Era 3–4
 
-Predictable but expensive and environmentally disruptive; restricted to suitable estuary sites.
+Predictable but expensive and environmentally disruptive; restricted to suitable estuary locations.
 
 ### Tidal-stream turbine — Era 4–5
 
@@ -396,7 +396,7 @@ Advanced deuterium, helium-3, or proton–boron fuels belong only in speculative
 
 - **Upgrade:** modifies equipment while preserving plant identity.
 - **Retrofit:** replaces a major subsystem, requires substantial downtime and materials.
-- **Successor:** decommission/recycle old equipment and reuse eligible site, connection, reservoir infrastructure, currently accounted water, water right, and civil work. Reuse does not grant a newly filled reservoir.
+- **Successor:** decommission/recycle old equipment and reuse an eligible location, connection, reservoir infrastructure, currently accounted water, water right, and civil work. Reuse does not grant a newly filled reservoir.
 
 Common axes are capacity, efficiency, flexibility, reliability, lifetime, water use, pollution, waste, and automation. Some choices are exclusive: wet/dry cooling, gearbox/direct drive, low-wind/storm rotor, maximum efficiency/fast ramping, and electricity/process-heat specialization.
 

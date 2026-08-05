@@ -343,33 +343,6 @@ function checkCircularUnlocks(bundle: ContentBundle, issues: SemanticIssue[]): v
 }
 
 /**
- * checks that every site template tag in every sector definition matches a tag
- * declared in at least one facility's validSiteTags, ensuring each site type
- * has at least one facility that can be built there
- */
-function checkSectorSiteTagRefs(bundle: ContentBundle, issues: SemanticIssue[]): void {
-  const knownTags = new Set<string>();
-  for (const facility of bundle.facilities) {
-    for (const tag of facility.validSiteTags) {
-      knownTags.add(tag);
-    }
-  }
-  for (const sector of bundle.sectors) {
-    for (const template of sector.siteTemplates) {
-      for (const tag of template.tags) {
-        if (!knownTags.has(tag)) {
-          issues.push({
-            catalog: "sectors",
-            itemId: sector.id,
-            message: `site template "${template.templateId}" uses tag "${tag}" not found in any facility's validSiteTags`,
-          });
-        }
-      }
-    }
-  }
-}
-
-/**
  * validates a structurally correct ContentBundle for semantic consistency and returns either
  * an immutable IndexedCatalog or a list of accumulated SemanticIssues
  */
@@ -384,7 +357,6 @@ export function buildIndexedCatalog(bundle: ContentBundle): SemanticResult {
   checkResearchReachability(bundle, issues);
   checkResourceProducibility(bundle, issues);
   checkCircularUnlocks(bundle, issues);
-  checkSectorSiteTagRefs(bundle, issues);
   if (issues.length > 0) return { ok: false, issues };
   return { ok: true, catalog: new IndexedCatalog(bundle) };
 }

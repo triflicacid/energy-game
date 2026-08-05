@@ -58,6 +58,9 @@ describe("Application", () => {
     const app = makeApp();
     const state = app.getCampaignState();
     expect(Object.keys(state.sectors).length).toBeGreaterThan(0);
+    expect(state.sectors["sector:1"]?.features).toHaveLength(3);
+    expect(Object.keys(state.facilities)).toHaveLength(0);
+    expect(Object.keys(state.towns)).toHaveLength(1);
     app.dispose();
   });
 

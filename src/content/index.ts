@@ -8,7 +8,6 @@ export type {
   FacilityDef,
   UpgradeDef,
   ResearchNodeDef,
-  SiteTemplateDef,
   SectorDef,
   SectorAccessState,
   ContentBundle,

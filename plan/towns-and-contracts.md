@@ -114,7 +114,7 @@ Town markers visibly develop as population and demand grow. These are presentati
 5. **Modern city:** concrete and glass mid-rise buildings.
 6. **Skyscraper metropolis:** a dense high-rise skyline.
 
-The renderer selects the corresponding `town-tier-1` through `town-tier-6` visual from town growth state. Each tier is a transparent entity overlay drawn over the sector's normal biome background, not a replacement terrain tile. Simulation and save data must not contain atlas rectangles. The generic `town` visual remains the fallback when a tier cannot be resolved.
+The sector's town feature references the independent town entity and owns its canonical logical origin and presentation tier. The renderer selects the corresponding `town-tier-1` through `town-tier-6` visual from that feature. Each tier is a transparent entity overlay drawn over the sector's normal biome background, not a replacement terrain tile. Simulation and save data must not contain atlas rectangles. The generic `town` visual remains the fallback when a tier cannot be resolved.
 
 ## Founding towns
 
