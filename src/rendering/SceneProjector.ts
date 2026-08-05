@@ -2,17 +2,18 @@
 
 import type { IndexedCatalog } from "@content";
 import type { ReadonlyCampaignState } from "@simulation/CampaignState";
+import { reservoirConnectionMask, reservoirSpriteId } from "./ReservoirAutotile";
 import { WORLD_SPRITES, type WorldSpriteId } from "./generated/world-atlas";
 import type { SceneCell, WorldScene } from "./WorldScene";
 
-/** deterministic cell position for one town within a sector's grid */
-export type TownCellLayout = {
+/** base grid position shared by all presentation cell layout types */
+export interface CellLayout {
   readonly col: number;
   readonly row: number;
-};
+}
 
 /** maps a sector definition ID to the ordered cell positions of its towns */
-export type TownPresentationLayouts = ReadonlyMap<string, readonly TownCellLayout[]>;
+export type TownPresentationLayouts = ReadonlyMap<string, readonly CellLayout[]>;
 
 /**
  * default town presentation layouts for all hand-authored sectors.
@@ -21,6 +22,40 @@ export type TownPresentationLayouts = ReadonlyMap<string, readonly TownCellLayou
  */
 export const DEFAULT_TOWN_LAYOUTS: TownPresentationLayouts = new Map([
   ["centre", [{ col: 6, row: 6 }]],
+]);
+
+/**
+ * one reservoir water cell in the presentation layer.
+ * cells sharing the same joinGroup join visually (their autotile mask connects them);
+ * cells in different joinGroups never connect even when adjacent on the grid.
+ */
+export interface ReservoirCellLayout extends CellLayout {
+  /** opaque string key; cells with identical joinGroup form one visual body */
+  readonly joinGroup: string;
+}
+
+/** maps a sector definition ID to the reservoir cells that should be rendered */
+export type ReservoirPresentationLayouts = ReadonlyMap<string, readonly ReservoirCellLayout[]>;
+
+/**
+ * deterministic reservoir presentation fixtures for hand-authored sectors.
+ * water extent has no simulation state yet; this supplies the rendering fixture
+ * until T01 water systems are implemented.
+ *
+ * centre-sector layout: 2×2 reservoir (cols 9–10, rows 4–5) + one cell at (10, 6).
+ * the cell at (9, 5) is directly east of the waterwheel at (8, 5), satisfying adjacency.
+ */
+export const DEFAULT_RESERVOIR_LAYOUTS: ReservoirPresentationLayouts = new Map([
+  [
+    "centre",
+    [
+      { col: 9, row: 4, joinGroup: "res-1" },
+      { col: 10, row: 4, joinGroup: "res-1" },
+      { col: 9, row: 5, joinGroup: "res-1" },
+      { col: 10, row: 5, joinGroup: "res-1" },
+      { col: 10, row: 6, joinGroup: "res-1" },
+    ],
+  ],
 ]);
 
 /** thrown when a required sector or definition is absent during projection */
@@ -39,6 +74,7 @@ export class SceneProjectionError extends Error {
  * @param state - read-only campaign state
  * @param catalog - indexed content definitions
  * @param townLayouts - deterministic town cell positions keyed by sector definition ID
+ * @param reservoirLayouts - deterministic reservoir cell fixtures keyed by sector definition ID
  * @throws SceneProjectionError if the sector or its definition cannot be resolved
  */
 export function projectSectorScene(
@@ -46,6 +82,7 @@ export function projectSectorScene(
   state: ReadonlyCampaignState,
   catalog: IndexedCatalog,
   townLayouts: TownPresentationLayouts = DEFAULT_TOWN_LAYOUTS,
+  reservoirLayouts: ReservoirPresentationLayouts = DEFAULT_RESERVOIR_LAYOUTS,
 ): WorldScene {
   const sector = state.sectors[sectorId];
   if (!sector) {
@@ -131,6 +168,16 @@ export function projectSectorScene(
     entities.push({ col: cell.col, row: cell.row, spriteId: "town" });
   }
 
+  // reservoir autotile: build a position→joinGroup lookup for O(1) neighbour queries
+  const reservoirCells = reservoirLayouts.get(sector.definitionId) ?? [];
+  const reservoirByPos = new Map(reservoirCells.map(c => [`${c.col},${c.row}`, c.joinGroup]));
+  for (const cell of reservoirCells) {
+    const mask = reservoirConnectionMask((dx, dy) => {
+      return reservoirByPos.get(`${cell.col + dx},${cell.row + dy}`) === cell.joinGroup;
+    });
+    groundOverlays.push({ col: cell.col, row: cell.row, spriteId: reservoirSpriteId(mask) });
+  }
+
   // sort all layers for determinism — same input always produces the same output
   // regardless of Record key insertion order or collection iteration order
   const sortCells = (a: SceneCell, b: SceneCell): number => {
@@ -148,9 +195,4 @@ export function projectSectorScene(
     facilities: facilities.sort(sortCells),
   };
 }
-
-
-
-
-
 

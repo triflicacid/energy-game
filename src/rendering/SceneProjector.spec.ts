@@ -8,6 +8,9 @@ import {
   projectSectorScene,
   SceneProjectionError,
   type TownPresentationLayouts,
+  type ReservoirPresentationLayouts,
+  DEFAULT_RESERVOIR_LAYOUTS,
+  DEFAULT_TOWN_LAYOUTS,
 } from "./SceneProjector";
 
 function loadCatalog(): IndexedCatalog {
@@ -273,3 +276,129 @@ describe("projectSectorScene — error handling", () => {
     expect(town?.row).toBe(3);
   });
 });
+
+describe("projectSectorScene — groundOverlays (reservoir autotile)", () => {
+  it("emits 5 ground overlay cells for the default centre sector reservoir fixture", () => {
+    const { state, catalog, sectorId } = setupState();
+    const scene = projectSectorScene(sectorId, state, catalog);
+    expect(scene.groundOverlays).toHaveLength(5);
+  });
+
+  it("all groundOverlay sprites are reservoir-water-* ids", () => {
+    const { state, catalog, sectorId } = setupState();
+    const scene = projectSectorScene(sectorId, state, catalog);
+    for (const cell of scene.groundOverlays) {
+      expect(cell.spriteId).toMatch(/^reservoir-water-[0-9a-f]{2}$/);
+    }
+  });
+
+  it("emits reservoir tiles at the expected grid positions", () => {
+    const { state, catalog, sectorId } = setupState();
+    const scene = projectSectorScene(sectorId, state, catalog);
+    const positions = new Set(scene.groundOverlays.map(c => `${c.col},${c.row}`));
+    expect(positions.has("9,4")).toBe(true);
+    expect(positions.has("10,4")).toBe(true);
+    expect(positions.has("9,5")).toBe(true);
+    expect(positions.has("10,5")).toBe(true);
+    expect(positions.has("10,6")).toBe(true);
+  });
+
+  it("applies correct autotile mask for (9,4): E+S → reservoir-water-06", () => {
+    const { state, catalog, sectorId } = setupState();
+    const scene = projectSectorScene(sectorId, state, catalog);
+    const cell = scene.groundOverlays.find(c => c.col === 9 && c.row === 4);
+    expect(cell).toBeDefined();
+    expect(cell?.spriteId).toBe("reservoir-water-06");
+  });
+
+  it("applies correct autotile mask for (10,4): W+S → reservoir-water-0c", () => {
+    const { state, catalog, sectorId } = setupState();
+    const scene = projectSectorScene(sectorId, state, catalog);
+    const cell = scene.groundOverlays.find(c => c.col === 10 && c.row === 4);
+    expect(cell).toBeDefined();
+    expect(cell?.spriteId).toBe("reservoir-water-0c");
+  });
+
+  it("applies correct autotile mask for (9,5): N+E → reservoir-water-03", () => {
+    const { state, catalog, sectorId } = setupState();
+    const scene = projectSectorScene(sectorId, state, catalog);
+    const cell = scene.groundOverlays.find(c => c.col === 9 && c.row === 5);
+    expect(cell).toBeDefined();
+    expect(cell?.spriteId).toBe("reservoir-water-03");
+  });
+
+  it("applies correct autotile mask for (10,5): N+W+S → reservoir-water-0d", () => {
+    const { state, catalog, sectorId } = setupState();
+    const scene = projectSectorScene(sectorId, state, catalog);
+    const cell = scene.groundOverlays.find(c => c.col === 10 && c.row === 5);
+    expect(cell).toBeDefined();
+    expect(cell?.spriteId).toBe("reservoir-water-0d");
+  });
+
+  it("applies correct autotile mask for (10,6): N only → reservoir-water-01", () => {
+    const { state, catalog, sectorId } = setupState();
+    const scene = projectSectorScene(sectorId, state, catalog);
+    const cell = scene.groundOverlays.find(c => c.col === 10 && c.row === 6);
+    expect(cell).toBeDefined();
+    expect(cell?.spriteId).toBe("reservoir-water-01");
+  });
+
+  it("reservoir cell at (9,5) does not join westward with the waterwheel at (8,5)", () => {
+    // the waterwheel cell is not a reservoir cell in any join group, so the W bit must be 0
+    // reservoir-water-03 = N+E only, confirming W is not set
+    const { state, catalog, sectorId } = setupState();
+    const scene = projectSectorScene(sectorId, state, catalog);
+    const cell = scene.groundOverlays.find(c => c.col === 9 && c.row === 5);
+    expect(cell?.spriteId).toBe("reservoir-water-03"); // not -0b (N+E+W)
+  });
+
+  it("cells from different join groups do not connect even when adjacent", () => {
+    const { state, catalog, sectorId } = setupState();
+    const splitLayout: ReservoirPresentationLayouts = new Map([
+      [
+        "centre",
+        [
+          { col: 5, row: 5, joinGroup: "a" },
+          { col: 6, row: 5, joinGroup: "b" }, // adjacent east, different group
+        ],
+      ],
+    ]);
+    const scene = projectSectorScene(sectorId, state, catalog, DEFAULT_TOWN_LAYOUTS, splitLayout);
+    const left = scene.groundOverlays.find(c => c.col === 5 && c.row === 5);
+    const right = scene.groundOverlays.find(c => c.col === 6 && c.row === 5);
+    expect(left?.spriteId).toBe("reservoir-water-00"); // isolated, no E connection
+    expect(right?.spriteId).toBe("reservoir-water-00"); // isolated, no W connection
+  });
+
+  it("emits no groundOverlays when the reservoir layout is empty for the sector", () => {
+    const { state, catalog, sectorId } = setupState();
+    const emptyLayout: ReservoirPresentationLayouts = new Map([["centre", []]]);
+    const scene = projectSectorScene(sectorId, state, catalog, DEFAULT_TOWN_LAYOUTS, emptyLayout);
+    expect(scene.groundOverlays).toHaveLength(0);
+  });
+
+  it("groundOverlays are sorted row-major (row asc, col asc, spriteId asc)", () => {
+    const { state, catalog, sectorId } = setupState();
+    const scene = projectSectorScene(sectorId, state, catalog);
+    for (let i = 1; i < scene.groundOverlays.length; i++) {
+      const prev = scene.groundOverlays[i - 1];
+      const curr = scene.groundOverlays[i];
+      if (!prev || !curr) continue;
+      if (curr.row !== prev.row) {
+        expect(curr.row).toBeGreaterThan(prev.row);
+      } else if (curr.col !== prev.col) {
+        expect(curr.col).toBeGreaterThan(prev.col);
+      } else {
+        expect(curr.spriteId >= prev.spriteId).toBe(true);
+      }
+    }
+  });
+
+  it("groundOverlays are deterministic across two identical calls", () => {
+    const { state, catalog, sectorId } = setupState();
+    const scene1 = projectSectorScene(sectorId, state, catalog);
+    const scene2 = projectSectorScene(sectorId, state, catalog);
+    expect(scene1.groundOverlays).toEqual(scene2.groundOverlays);
+  });
+});
+

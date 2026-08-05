@@ -15,10 +15,11 @@ EnergyGame contains tested foundation, content, simulation, application-shell, s
 - `U01a` ✅ `AtlasLoader` with injectable image boundary; `WorldAtlasPainter` draws sprites by semantic ID with anchor offset; DPR-aware `resizeBackingBuffer`; atlas error/loading fallbacks.
 - `U01b` ✅ `WorldScene` / `SceneCell` immutable scene model; `SceneProjector.projectSectorScene` pure function; `SiteSerialState.templateId` preserves template identity; `TownPresentationLayouts` deterministic town grid positions; 402 tests passing at completion.
 - `U01c` ✅ `CanvasRenderer` draws layered biome → ground overlays → entities → facilities using `WorldAtlasPainter`; `Application` eagerly loads bundled content, builds `IndexedCatalog`, and creates the initial `CampaignState` with the centre sector stamped in.
+- `U01di` ✅ deterministic reservoir fixture layout in `SceneProjector`; cardinal-mask autotile selection (`reservoir-water-00`…`0f`) for shared join-group neighbors; diagonal-only and cross-group adjacency do not connect.
 - **Camera core** ✅ `CameraState.ts` pure math (world/screen transforms, zoom-toward-point, clamp helpers, 29 tests); `CanvasRenderer` has scroll-to-zoom (10% step, max 10×), unbounded drag-to-pan in both views, sector detail / campaign map view modes, `M` key toggle, shift+scroll transition to campaign map at `0.5 × fitZoom`, initial zoom at `2 × fitZoom` for immediate panning room.
 - **Campaign map placeholder** ✅ dark background with a biome-coloured flat-top hex node, sector name label, and return-hint text; drag-pan is unbounded.
 - **Design notes recorded**: mechanical workshop tier progression (`plan/power-plants.md`); camera and navigation model including two view modes and control scheme (`plan/map-and-regions.md`).
-- 436 tests passing; 27 test files.
+- 449 tests passing; 27 test files.
 
 ## Non-negotiable decisions
 
@@ -122,8 +123,9 @@ F00
          │   └─ ✅ U01b read-only world scene (+ M00)
          │       └─ ✅ U01c layered centre-sector composition
          │           │   (camera core also complete — see U01e note below)
-         │           └─ U01d reservoir/town variants
-         │               └─ U01e (remainder) interaction rendering (+ U02)
+         │           └─ ✅ U01di reservoir visual variants
+         │               └─ U01dii town visual variants
+         │                   └─ U01e (remainder) interaction rendering (+ U02)
          └─ U02 HTML status/build/research UI (+ S02 + S03 + V01 + C02 + A01)
 
 E00 + V02
@@ -455,10 +457,13 @@ Each research facility independently assigns its output to a target node. The `R
 
 **Depends on:** V00, S02
 
+**Read:** waterwheel adjacency rule in `plan/power-plants.md`
+
 **Deliverables:**
 
 - Site-local mechanical generation and consumption pool.
 - Waterwheel consumes construction resources and provides mechanical capacity.
+- **Waterwheel water adjacency:** a waterwheel produces mechanical power only when at least one of its four cardinal grid neighbours is a reservoir water cell belonging to the same sector. If the adjacency is absent (drained or removed reservoir), output is zero. This is a tick-level check against sector water-cell state, not a placement constraint.
 - Mechanical workshop requests capacity and reduces operation proportionally or stops when unavailable, according to the content behavior.
 - No shaft geometry or canvas dependency.
 
@@ -466,6 +471,8 @@ Each research facility independently assigns its output to a target node. The `R
 
 - Supply, demand, shortage, and unused capacity reconcile each tick.
 - Mechanical power is distinct from electrical power and energy.
+- A waterwheel with no adjacent water cell produces zero output each tick.
+- A waterwheel with at least one adjacent water cell produces its rated capacity (subject to flow factors added in T01).
 
 ## V02 — First headless gameplay loop
 
@@ -612,24 +619,36 @@ Integrate a tested scenario:
 
 **Acceptance:** a deterministic centre-sector fixture shows the temperate background, forest, town, one-cell waterwheel, and two-cell workshop in the intended order; draw-command tests verify ordering and anchors; transparent areas reveal the biome; no placeholder site art appears.
 
-## U01d — Reservoir and town visual variants
+## ✅ U01di — Reservoir visual variants
 
 **Depends on:** U01c
 
-**Read:** reservoir section of `plan/sprites-and-atlases.md`, visual tiers in `plan/towns-and-contracts.md`
+**Read:** reservoir section of `plan/sprites-and-atlases.md`
 
 **Deliverables:**
 
 - Select `reservoir-water-00` through `reservoir-water-0f` from north/east/south/west neighbors in the same visual join group.
 - Ignore diagonal-only contact and never join distinct reservoirs merely because cells touch.
-- Select `town-tier-1` through `town-tier-6` from presentation growth state and use `town` when no tier can be resolved.
-- Use deterministic rendering fixtures until water extent and town growth are supplied by gameplay; do not add fake production simulation state to demonstrate art.
+- Use deterministic rendering fixtures until water extent is supplied by gameplay; do not add fake production simulation state to demonstrate art.
 
-**Acceptance:** all 16 reservoir masks render at correct positions and matching edges; distinct groups and diagonals remain disconnected; each town tier and fallback is covered; visual reservoir area does not determine capacity or connectivity.
+**Acceptance:** all 16 reservoir autotile masks render at correct positions with matching shared edges; distinct join groups and diagonal-only contacts remain disconnected; visual reservoir area does not determine capacity or connectivity.
+
+## U01dii — Town visual variants
+
+**Depends on:** U01di
+
+**Read:** visual tiers in `plan/towns-and-contracts.md`
+
+**Deliverables:**
+
+- Select `town-tier-1` through `town-tier-6` from presentation growth state and use `town` when no tier can be resolved.
+- Use deterministic rendering fixtures until town growth is supplied by gameplay; do not add fake production simulation state to demonstrate art.
+
+**Acceptance:** each of the six tier sprites and the fallback `town` sprite is exercised by a fixture; tier selection is driven only by presentation state, not simulation internals; rendering remains deterministic for equal scene state.
 
 ## U01e — Camera and interaction rendering
 
-**Depends on:** U01d, U02
+**Depends on:** U01dii, U02
 
 **Read:** construction-mode and anchoring sections of `plan/sprites-and-atlases.md`, camera and navigation section of `plan/map-and-regions.md`
 

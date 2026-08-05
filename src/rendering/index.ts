@@ -16,7 +16,7 @@ export {
   projectSectorScene,
   SceneProjectionError,
   DEFAULT_TOWN_LAYOUTS,
-  type TownCellLayout,
+  type CellLayout,
   type TownPresentationLayouts,
 } from "./SceneProjector";
 export {

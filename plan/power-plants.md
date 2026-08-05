@@ -24,6 +24,7 @@ Older technologies retain niches; progression should not reduce to buying a univ
 - Timber construction
 - Produces local mechanical power
 - Cheap, inefficient, flow-dependent
+- **Grid adjacency rule:** a waterwheel site is only valid when at least one of its four cardinal neighbours is a reservoir water cell. The waterwheel produces no mechanical power if that adjacency is lost (e.g. the reservoir is drained or removed). This is enforced in placement validation (U02) and in mechanical-power tick logic (V01).
 
 Upgrades: improved paddles, timber bracing, debris screen, sluice control, reinforced axle, iron bearings, dynamo attachment.
 

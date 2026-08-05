@@ -43,6 +43,13 @@ function createReservoirSvg(mask: number): string {
     shapes.push(rect(0, 2, 3, 12, "#143858"));
   }
 
+  // When two connected shores meet at a corner, fill that cap with water.
+  // Without these corner caps, 2x2/4-way joins can show a dark pinhole.
+  if (north && east) shapes.push(rect(13, 0, 3, 3, "#143858"));
+  if (east && south) shapes.push(rect(13, 13, 3, 3, "#143858"));
+  if (south && west) shapes.push(rect(0, 13, 3, 3, "#143858"));
+  if (west && north) shapes.push(rect(0, 0, 3, 3, "#143858"));
+
   // Bank highlights appear only on closed shores.
   if (!north) shapes.push(rect(3, 1, 10, 1, "#5a4a2b"));
   if (!east) shapes.push(rect(14, 3, 1, 10, "#443923"));
