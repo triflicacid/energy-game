@@ -160,6 +160,7 @@ The world manifest uses explicit `atlasRow` categories so generated sheets are e
 2. Town/entity overlays and the temporary legacy `forest-site` visual
 3. Constructed facilities
 4. Innate-woodland and planted-forest lifecycle visuals
+5. Resource and sector UI icons, authored at `16 × 16` logical pixels and packed at `32 × 32` output pixels
 
 Every sprite in a manifest that opts into explicit rows must declare a row. A category must fit on one atlas shelf; generation should fail clearly rather than silently split that category. Runtime code still resolves sprites by ID through the generated descriptor and must not rely on these row numbers.
 

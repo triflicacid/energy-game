@@ -342,6 +342,38 @@
       "footprintW": 1, "footprintH": 1,
       "anchorX": 0, "anchorY": 0,
       "atlasRow": 4
+    },
+    {
+      "id": "icon-lumber",
+      "src": "icons/icon-lumber.svg",
+      "pixelWidth": 32, "pixelHeight": 32,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 5
+    },
+    {
+      "id": "icon-timber",
+      "src": "icons/icon-timber.svg",
+      "pixelWidth": 32, "pixelHeight": 32,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 5
+    },
+    {
+      "id": "icon-wood-waste",
+      "src": "icons/icon-wood-waste.svg",
+      "pixelWidth": 32, "pixelHeight": 32,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 5
+    },
+    {
+      "id": "icon-water",
+      "src": "icons/icon-water.svg",
+      "pixelWidth": 32, "pixelHeight": 32,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 5
     }
   ]
 }

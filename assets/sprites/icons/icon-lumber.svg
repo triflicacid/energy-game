@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="32" height="32" shape-rendering="crispEdges">
+  <!-- icon-lumber -->
+  <!-- bottom plank -->
+  <path d="M1 10l3-3h11v4l-3 3H1z" fill="#3a2414"/>
+  <path d="M2 10l3-2h9l-3 2z" fill="#b96f35"/>
+  <rect x="2" y="11" width="9" height="2" fill="#d4934f"/>
+  <path d="M11 10l3-2v2l-3 3z" fill="#765025"/>
+  <path d="M5 9h5l1-1h2" fill="none" stroke="#7d451f" stroke-width="1"/>
+  <!-- middle plank -->
+  <path d="M1 7l3-3h10v4l-3 3H1z" fill="#3a2414"/>
+  <path d="M2 7l3-2h8l-3 2z" fill="#c47b3b"/>
+  <rect x="2" y="8" width="8" height="2" fill="#d4934f"/>
+  <path d="M10 7l3-2v2l-3 3z" fill="#765025"/>
+  <path d="M5 6h3l1-1h3" fill="none" stroke="#7d451f" stroke-width="1"/>
+  <!-- top plank -->
+  <path d="M4 4l3-3h8v4l-3 3H4z" fill="#3a2414"/>
+  <path d="M5 4l3-2h6l-3 2z" fill="#c98242"/>
+  <rect x="5" y="5" width="6" height="2" fill="#dfa05a"/>
+  <path d="M11 4l3-2v2l-3 3z" fill="#765025"/>
+  <path d="M8 3h4l1-1" fill="none" stroke="#7d451f" stroke-width="1"/>
+  <!-- end-grain marks -->
+  <rect x="3" y="11" width="2" height="1" fill="#a96834"/>
+  <rect x="3" y="8" width="1" height="1" fill="#a96834"/>
+  <rect x="6" y="5" width="2" height="1" fill="#b8753a"/>
+</svg>
