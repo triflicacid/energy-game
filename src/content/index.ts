@@ -5,14 +5,22 @@ export type {
   ResourceRef,
   ResourceDef,
   RecipeDef,
-  FacilityDef,
+  BuildingDef,
+  GenericBuildingDef,
+  ExtractorBuildingDef,
+  ExtractorSourceKind,
   UpgradeDef,
   ResearchNodeDef,
   SiteTemplateDef,
   SectorDef,
   SectorAccessState,
+  InnateWoodlandDef,
+  SectorWaterDef,
+  SectorReserveDef,
+  PlantedForestProfileDef,
   ContentBundle,
-} from "./defs";export type { ValidationIssue } from "./validate";
+} from "./defs";
+export type { ValidationIssue } from "./validate";
 export type { RawCatalogs, LoadResult } from "./ContentLoader";
 export { ContentLoader, loadBundledContent } from "./ContentLoader";
 export type { SemanticIssue, SemanticResult } from "./IndexedCatalog";

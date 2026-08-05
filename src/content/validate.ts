@@ -3,14 +3,19 @@
 import type { ResourceId } from "@shared/IdCounter";
 import { makeBiomeId } from "@shared/IdCounter";
 import type {
+  BuildingDef,
   ContentBundle,
-  FacilityDef,
+  ExtractorSourceKind,
+  InnateWoodlandDef,
+  PlantedForestProfileDef,
   RecipeDef,
   ResearchNodeDef,
   ResourceDef,
   ResourceRef,
   SectorAccessState,
   SectorDef,
+  SectorReserveDef,
+  SectorWaterDef,
   SiteTemplateDef,
   UpgradeDef,
 } from "./defs";
@@ -65,6 +70,62 @@ function readFiniteNum(o: Record<string, unknown>, f: string): number | null {
 function readIntNum(o: Record<string, unknown>, f: string): number | null {
   const v = o[f];
   return typeof v === "number" && Number.isFinite(v) && Number.isInteger(v) ? v : null;
+}
+
+/** reads a resource's mandatory icon reference; must be a non-empty string starting with "icon-" */
+function readIconId(
+  o: Record<string, unknown>,
+  issues: ValidationIssue[],
+  catalog: string,
+  index: number,
+  id: string | null,
+): string | null {
+  const v = o["iconId"];
+  if (typeof v !== "string" || v.trim().length === 0) {
+    issues.push({ catalog, itemIndex: index, itemId: id, path: "iconId", message: "must be a non-empty string" });
+    return null;
+  }
+  if (!v.startsWith("icon-")) {
+    issues.push({ catalog, itemIndex: index, itemId: id, path: "iconId", message: 'must start with "icon-"' });
+    return null;
+  }
+  return v;
+}
+
+/**
+ * fields that would introduce a per-building/per-facility material inventory.
+ * the game uses exactly one company-wide inventory; rejecting these keys keeps
+ * content from silently growing a second storage concept.
+ */
+const FORBIDDEN_INVENTORY_KEYS: readonly string[] = [
+  "inventory",
+  "warehouse",
+  "warehouseInventory",
+  "localInventory",
+  "facilityInventory",
+  "sectorInventory",
+  "generalInventory",
+];
+
+/** structural guard: rejects any per-building inventory field on a raw content object */
+function checkNoInventoryKeys(
+  o: Record<string, unknown>,
+  catalog: string,
+  index: number,
+  id: string | null,
+  issues: ValidationIssue[],
+): void {
+  for (const key of FORBIDDEN_INVENTORY_KEYS) {
+    if (key in o) {
+      issues.push({
+        catalog,
+        itemIndex: index,
+        itemId: id,
+        path: key,
+        message: "must not be defined — the game uses exactly one company-wide inventory, not a per-building inventory",
+      });
+    }
+  }
 }
 
 /**
@@ -168,9 +229,10 @@ export function validateResourceDef(
   if (waste === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "waste", message: "must be a boolean" });
   const hazardous = readBool(o, "hazardous");
   if (hazardous === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "hazardous", message: "must be a boolean" });
+  const iconId = readIconId(o, issues, catalog, index, id);
 
-  if (!id || !category || !unit || storable === null || importable === null || renewable === null || waste === null || hazardous === null) return null;
-  return { id: id as ResourceId, category, unit, storable, importable, renewable, waste, hazardous };
+  if (!id || !category || !unit || storable === null || importable === null || renewable === null || waste === null || hazardous === null || !iconId) return null;
+  return { id: id as ResourceId, category, unit, storable, importable, renewable, waste, hazardous, iconId };
 }
 
 /** validates one raw recipe entry, accumulating issues and returning the typed def or null */
@@ -201,13 +263,16 @@ export function validateRecipeDef(
   return { id, inputs, outputs, byproducts, durationHours, mechPowerKW, requiredResearch, requiredCapabilities };
 }
 
-/** validates one raw facility entry, accumulating issues and returning the typed def or null */
-export function validateFacilityDef(
+const VALID_BUILDING_TYPES: ReadonlySet<string> = new Set(["generic", "extractor"]);
+const VALID_SOURCE_KINDS: ReadonlySet<string> = new Set<ExtractorSourceKind>(["reserve", "woodland", "water"]);
+
+/** validates one raw building entry, accumulating issues and returning the typed def or null */
+export function validateBuildingDef(
   raw: unknown,
   catalog: string,
   index: number,
   issues: ValidationIssue[],
-): FacilityDef | null {
+): BuildingDef | null {
   const o = asRecord(raw);
   if (!o) {
     issues.push({ catalog, itemIndex: index, itemId: null, path: "", message: "must be an object" });
@@ -215,6 +280,9 @@ export function validateFacilityDef(
   }
   const id = readStr(o, "id");
   if (!id) issues.push({ catalog, itemIndex: index, itemId: null, path: "id", message: "must be a non-empty string" });
+
+  checkNoInventoryKeys(o, catalog, index, id, issues);
+
   const behaviorId = readStr(o, "behaviorId");
   if (!behaviorId) issues.push({ catalog, itemIndex: index, itemId: id, path: "behaviorId", message: "must be a non-empty string" });
   const validSiteTags = readStringArray(o, "validSiteTags", issues, catalog, index, id);
@@ -228,11 +296,45 @@ export function validateFacilityDef(
   const upgradeIds = readStringArray(o, "upgradeIds", issues, catalog, index, id);
   const capabilities = readStringArray(o, "capabilities", issues, catalog, index, id);
 
-  if (!id || !behaviorId || !validSiteTags || !constructionCost || constructionMoneyBase === null || constructionTimeHours === null || !requiredResearch || !recipeIds || !upgradeIds || !capabilities) return null;
-  // spriteId is optional; present only for facilities with authored sprites
+  const rawType = o["type"];
+  let type: "generic" | "extractor" | null = null;
+  if (typeof rawType !== "string" || !VALID_BUILDING_TYPES.has(rawType)) {
+    issues.push({ catalog, itemIndex: index, itemId: id, path: "type", message: `must be one of: ${[...VALID_BUILDING_TYPES].join(", ")}` });
+  } else {
+    type = rawType as "generic" | "extractor";
+  }
+
+  if (!id || !behaviorId || !validSiteTags || !constructionCost || constructionMoneyBase === null || constructionTimeHours === null || !requiredResearch || !recipeIds || !upgradeIds || !capabilities || !type) {
+    return null;
+  }
+
+  // spriteId is optional; present only for buildings with authored sprites
   const rawSprite = o["spriteId"];
   const spriteId = typeof rawSprite === "string" && rawSprite.trim().length > 0 ? rawSprite : undefined;
-  return { id, behaviorId, validSiteTags, constructionCost, constructionMoneyBase, constructionTimeHours, requiredResearch, recipeIds, upgradeIds, capabilities, ...(spriteId !== undefined ? { spriteId } : {}) };
+  const base = {
+    id, behaviorId, validSiteTags, constructionCost, constructionMoneyBase, constructionTimeHours,
+    requiredResearch, recipeIds, upgradeIds, capabilities,
+    ...(spriteId !== undefined ? { spriteId } : {}),
+  };
+
+  if (type === "generic") {
+    return { ...base, type: "generic" };
+  }
+
+  // type === "extractor"
+  const rawSourceKind = o["sourceKind"];
+  let sourceKind: ExtractorSourceKind | null = null;
+  if (typeof rawSourceKind !== "string" || !VALID_SOURCE_KINDS.has(rawSourceKind)) {
+    issues.push({ catalog, itemIndex: index, itemId: id, path: "sourceKind", message: `must be one of: ${[...VALID_SOURCE_KINDS].join(", ")}` });
+  } else {
+    sourceKind = rawSourceKind as ExtractorSourceKind;
+  }
+  const compatibleResourceIds = readStringArray(o, "compatibleResourceIds", issues, catalog, index, id);
+  const capacityPerHour = readNum(o, "capacityPerHour", true);
+  if (capacityPerHour === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "capacityPerHour", message: "must be a finite positive number" });
+
+  if (!sourceKind || !compatibleResourceIds || capacityPerHour === null) return null;
+  return { ...base, type: "extractor", sourceKind, compatibleResourceIds, capacityPerHour };
 }
 
 /** validates one raw upgrade entry, accumulating issues and returning the typed def or null */
@@ -297,6 +399,173 @@ export function validateResearchNodeDef(
   return { id, era, parentIds, researchCost, unlockIds };
 }
 
+/** validates the "innateWoodland" field: null (no woodland) or a valid definition object */
+function validateInnateWoodlandDef(
+  o: Record<string, unknown>,
+  field: string,
+  issues: ValidationIssue[],
+  catalog: string,
+  index: number,
+  sectorId: string | null,
+): InnateWoodlandDef | null | undefined {
+  if (!(field in o)) {
+    issues.push({ catalog, itemIndex: index, itemId: sectorId, path: field, message: "must be an object or null" });
+    return undefined;
+  }
+  const v = o[field];
+  if (v === null) return null;
+  const rec = asRecord(v);
+  if (!rec) {
+    issues.push({ catalog, itemIndex: index, itemId: sectorId, path: field, message: "must be an object or null" });
+    return undefined;
+  }
+  const maxBiomassKg = readNum(rec, "maxBiomassKg", true);
+  if (maxBiomassKg === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `${field}.maxBiomassKg`, message: "must be a finite positive number" });
+  const initialBiomassKg = readNum(rec, "initialBiomassKg", false);
+  if (initialBiomassKg === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `${field}.initialBiomassKg`, message: "must be a finite non-negative number" });
+  const viabilityThresholdKg = readNum(rec, "viabilityThresholdKg", false);
+  if (viabilityThresholdKg === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `${field}.viabilityThresholdKg`, message: "must be a finite non-negative number" });
+  const growthRateKgPerHour = readNum(rec, "growthRateKgPerHour", false);
+  if (growthRateKgPerHour === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `${field}.growthRateKgPerHour`, message: "must be a finite non-negative number" });
+  if (maxBiomassKg === null || initialBiomassKg === null || viabilityThresholdKg === null || growthRateKgPerHour === null) return undefined;
+  if (initialBiomassKg > maxBiomassKg) {
+    issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `${field}.initialBiomassKg`, message: "must not exceed maxBiomassKg" });
+    return undefined;
+  }
+  return { maxBiomassKg, initialBiomassKg, viabilityThresholdKg, growthRateKgPerHour };
+}
+
+/** validates the "water" field: null (no local water source) or a valid definition object */
+function validateSectorWaterDef(
+  o: Record<string, unknown>,
+  field: string,
+  issues: ValidationIssue[],
+  catalog: string,
+  index: number,
+  sectorId: string | null,
+): SectorWaterDef | null | undefined {
+  if (!(field in o)) {
+    issues.push({ catalog, itemIndex: index, itemId: sectorId, path: field, message: "must be an object or null" });
+    return undefined;
+  }
+  const v = o[field];
+  if (v === null) return null;
+  const rec = asRecord(v);
+  if (!rec) {
+    issues.push({ catalog, itemIndex: index, itemId: sectorId, path: field, message: "must be an object or null" });
+    return undefined;
+  }
+  const maxStockM3 = readNum(rec, "maxStockM3", true);
+  if (maxStockM3 === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `${field}.maxStockM3`, message: "must be a finite positive number" });
+  const initialStockM3 = readNum(rec, "initialStockM3", false);
+  if (initialStockM3 === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `${field}.initialStockM3`, message: "must be a finite non-negative number" });
+  const baselineInflowM3PerHour = readNum(rec, "baselineInflowM3PerHour", false);
+  if (baselineInflowM3PerHour === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `${field}.baselineInflowM3PerHour`, message: "must be a finite non-negative number" });
+  if (maxStockM3 === null || initialStockM3 === null || baselineInflowM3PerHour === null) return undefined;
+  if (initialStockM3 > maxStockM3) {
+    issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `${field}.initialStockM3`, message: "must not exceed maxStockM3" });
+    return undefined;
+  }
+  return { maxStockM3, initialStockM3, baselineInflowM3PerHour };
+}
+
+/** validates one raw finite-reserve entry within a sector's "reserves" array */
+function validateSectorReserveDef(
+  raw: unknown,
+  catalog: string,
+  index: number,
+  issues: ValidationIssue[],
+  sectorId: string | null,
+  reserveIndex: number,
+): SectorReserveDef | null {
+  const o = asRecord(raw);
+  if (!o) {
+    issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `reserves[${reserveIndex}]`, message: "must be an object" });
+    return null;
+  }
+  const resourceId = readStr(o, "resourceId");
+  if (!resourceId) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `reserves[${reserveIndex}].resourceId`, message: "must be a non-empty string" });
+  const initialQuantity = readNum(o, "initialQuantity", false);
+  if (initialQuantity === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `reserves[${reserveIndex}].initialQuantity`, message: "must be a finite non-negative number" });
+  const surveyed = readBool(o, "surveyed");
+  if (surveyed === null) issues.push({ catalog, itemIndex: index, itemId: sectorId, path: `reserves[${reserveIndex}].surveyed`, message: "must be a boolean" });
+  if (!resourceId || initialQuantity === null || surveyed === null) return null;
+  return { resourceId, initialQuantity, surveyed };
+}
+
+/** reads the "reserves" array field, validating every entry */
+function readReservesArray(
+  o: Record<string, unknown>,
+  field: string,
+  issues: ValidationIssue[],
+  catalog: string,
+  index: number,
+  sectorId: string | null,
+): SectorReserveDef[] | null {
+  const v = o[field];
+  if (!Array.isArray(v)) {
+    issues.push({ catalog, itemIndex: index, itemId: sectorId, path: field, message: "must be an array" });
+    return null;
+  }
+  let ok = true;
+  const result: SectorReserveDef[] = [];
+  for (let i = 0; i < v.length; i++) {
+    const r = validateSectorReserveDef(v[i], catalog, index, issues, sectorId, i);
+    if (r === null) { ok = false; } else { result.push(r); }
+  }
+  return ok ? result : null;
+}
+
+/** validates one raw planted-forest lifecycle profile entry, accumulating issues and returning the typed def or null */
+export function validatePlantedForestProfileDef(
+  raw: unknown,
+  catalog: string,
+  index: number,
+  issues: ValidationIssue[],
+): PlantedForestProfileDef | null {
+  const o = asRecord(raw);
+  if (!o) {
+    issues.push({ catalog, itemIndex: index, itemId: null, path: "", message: "must be an object" });
+    return null;
+  }
+  const id = readStr(o, "id");
+  if (!id) issues.push({ catalog, itemIndex: index, itemId: null, path: "id", message: "must be a non-empty string" });
+  const maxBiomassKg = readNum(o, "maxBiomassKg", true);
+  if (maxBiomassKg === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "maxBiomassKg", message: "must be a finite positive number" });
+  const growthRateKgPerHour = readNum(o, "growthRateKgPerHour", false);
+  if (growthRateKgPerHour === null) issues.push({ catalog, itemIndex: index, itemId: id, path: "growthRateKgPerHour", message: "must be a finite non-negative number" });
+
+  const nearlyEmptyMaxFraction = readNum(o, "nearlyEmptyMaxFraction", false);
+  if (nearlyEmptyMaxFraction === null || nearlyEmptyMaxFraction > 1) {
+    issues.push({ catalog, itemIndex: index, itemId: id, path: "nearlyEmptyMaxFraction", message: "must be a finite number between 0 and 1" });
+  }
+  const semiHarvestedMaxFraction = readNum(o, "semiHarvestedMaxFraction", false);
+  if (semiHarvestedMaxFraction === null || semiHarvestedMaxFraction > 1) {
+    issues.push({ catalog, itemIndex: index, itemId: id, path: "semiHarvestedMaxFraction", message: "must be a finite number between 0 and 1" });
+  }
+  const matureMinFraction = readNum(o, "matureMinFraction", false);
+  if (matureMinFraction === null || matureMinFraction > 1) {
+    issues.push({ catalog, itemIndex: index, itemId: id, path: "matureMinFraction", message: "must be a finite number between 0 and 1" });
+  }
+
+  if (
+    !id || maxBiomassKg === null || growthRateKgPerHour === null ||
+    nearlyEmptyMaxFraction === null || nearlyEmptyMaxFraction > 1 ||
+    semiHarvestedMaxFraction === null || semiHarvestedMaxFraction > 1 ||
+    matureMinFraction === null || matureMinFraction > 1
+  ) {
+    return null;
+  }
+  if (!(nearlyEmptyMaxFraction <= semiHarvestedMaxFraction && semiHarvestedMaxFraction <= matureMinFraction)) {
+    issues.push({
+      catalog, itemIndex: index, itemId: id, path: "matureMinFraction",
+      message: "fraction thresholds must satisfy nearlyEmptyMaxFraction <= semiHarvestedMaxFraction <= matureMinFraction",
+    });
+    return null;
+  }
+  return { id, maxBiomassKg, growthRateKgPerHour, nearlyEmptyMaxFraction, semiHarvestedMaxFraction, matureMinFraction };
+}
+
 /** signature for a function that validates one raw item from a named catalog at a given index */
 type CatalogValidator<T> = (raw: unknown, catalog: string, index: number, issues: ValidationIssue[]) => T | null;
 
@@ -323,19 +592,21 @@ export function validateCatalog<T>(
 export function validateBundle(
   resources: unknown,
   recipes: unknown,
-  facilities: unknown,
+  buildings: unknown,
   upgrades: unknown,
   researchNodes: unknown,
   sectors: unknown = [],
+  plantedForestProfiles: unknown = [],
 ): { bundle: ContentBundle; issues: readonly ValidationIssue[] } {
   const issues: ValidationIssue[] = [];
   const bundle: ContentBundle = {
     resources: validateCatalog(resources, "resources", validateResourceDef, issues),
     recipes: validateCatalog(recipes, "recipes", validateRecipeDef, issues),
-    facilities: validateCatalog(facilities, "facilities", validateFacilityDef, issues),
+    buildings: validateCatalog(buildings, "buildings", validateBuildingDef, issues),
     upgrades: validateCatalog(upgrades, "upgrades", validateUpgradeDef, issues),
     researchNodes: validateCatalog(researchNodes, "researchNodes", validateResearchNodeDef, issues),
     sectors: validateCatalog(sectors, "sectors", validateSectorDef, issues),
+    plantedForestProfiles: validateCatalog(plantedForestProfiles, "plantedForestProfiles", validatePlantedForestProfileDef, issues),
   };
   return { bundle, issues };
 }
@@ -425,7 +696,19 @@ export function validateSectorDef(
     if (!ok) siteTemplates = null;
   }
 
-  if (!id || !name || !biome || distanceFromCentre === null || diameter === null || gridQ === null || gridR === null || hasTown === null || !initialAccessState || !siteTemplates) return null;
-  return { id, name, biome: makeBiomeId(biome), distanceFromCentre, diameter, gridQ, gridR, siteTemplates, hasTown, initialAccessState };
-}
+  const innateWoodland = validateInnateWoodlandDef(o, "innateWoodland", issues, catalog, index, id);
+  const water = validateSectorWaterDef(o, "water", issues, catalog, index, id);
+  const reserves = readReservesArray(o, "reserves", issues, catalog, index, id);
 
+  if (
+    !id || !name || !biome || distanceFromCentre === null || diameter === null || gridQ === null || gridR === null ||
+    hasTown === null || !initialAccessState || !siteTemplates ||
+    innateWoodland === undefined || water === undefined || !reserves
+  ) {
+    return null;
+  }
+  return {
+    id, name, biome: makeBiomeId(biome), distanceFromCentre, diameter, gridQ, gridR, siteTemplates, hasTown, initialAccessState,
+    innateWoodland, water, reserves,
+  };
+}

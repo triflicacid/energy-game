@@ -12,7 +12,19 @@
       { "templateId": "centre-waterwheel-1", "tags": ["waterwheel-site"], "x": 2, "y": -1 }
     ],
     "hasTown": true,
-    "initialAccessState": "buildable"
+    "initialAccessState": "buildable",
+    "innateWoodland": {
+      "maxBiomassKg": 20000,
+      "initialBiomassKg": 12000,
+      "viabilityThresholdKg": 1000,
+      "growthRateKgPerHour": 4
+    },
+    "water": {
+      "maxStockM3": 40000,
+      "initialStockM3": 20000,
+      "baselineInflowM3PerHour": 8
+    },
+    "reserves": []
   }
 ]
 

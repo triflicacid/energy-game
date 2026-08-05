@@ -14,6 +14,7 @@ export default defineConfig({
     '@typescript-eslint/no-inferrable-types': 'error',
     '@typescript-eslint/explicit-member-accessibility': ['error', { accessibility: 'explicit' }],
     '@typescript-eslint/consistent-type-definitions': 'off',
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
   },
 });
 

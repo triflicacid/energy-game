@@ -1,6 +1,7 @@
 [
   {
     "id": "forestry-operation",
+    "type": "generic",
     "behaviorId": "forestGrowth",
     "validSiteTags": ["forest"],
     "constructionCost": [{ "resourceId": "timber", "qty": 20 }],
@@ -13,6 +14,7 @@
   },
   {
     "id": "waterwheel",
+    "type": "generic",
     "behaviorId": "mechanicalGenerator",
     "spriteId": "waterwheel",
     "validSiteTags": ["waterwheel-site"],
@@ -26,6 +28,7 @@
   },
   {
     "id": "mechanical-workshop",
+    "type": "generic",
     "behaviorId": "materialProcessor",
     "spriteId": "mechanical-workshop",
     "validSiteTags": ["workshop-site"],
@@ -38,4 +41,3 @@
     "capabilities": ["research", "mechanicalProcessing"]
   }
 ]
-

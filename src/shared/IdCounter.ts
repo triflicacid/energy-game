@@ -15,6 +15,9 @@ export type SiteId = Brand<string, "SiteId">;
 /** unique runtime identifier for a facility instance */
 export type FacilityId = Brand<string, "FacilityId">;
 
+/** unique runtime identifier for a player-planted forest instance */
+export type PlantedForestId = Brand<string, "PlantedForestId">;
+
 /** unique runtime identifier for a contract */
 export type ContractId = Brand<string, "ContractId">;
 
@@ -69,6 +72,11 @@ export function makeSiteId(counter: IdCounter): SiteId {
 /** creates a new FacilityId using counter */
 export function makeFacilityId(counter: IdCounter): FacilityId {
   return `facility:${counter.next()}` as FacilityId;
+}
+
+/** creates a new PlantedForestId using counter */
+export function makePlantedForestId(counter: IdCounter): PlantedForestId {
+  return `planted-forest:${counter.next()}` as PlantedForestId;
 }
 
 /** creates a new ContractId using counter */

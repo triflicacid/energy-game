@@ -7,7 +7,8 @@
     "importable": true,
     "renewable": true,
     "waste": false,
-    "hazardous": false
+    "hazardous": false,
+    "iconId": "icon-timber"
   },
   {
     "id": "wood-waste",
@@ -17,7 +18,7 @@
     "importable": false,
     "renewable": true,
     "waste": true,
-    "hazardous": false
+    "hazardous": false,
+    "iconId": "icon-wood-waste"
   }
 ]
-

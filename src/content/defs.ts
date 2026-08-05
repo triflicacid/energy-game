@@ -23,6 +23,41 @@ export type SiteTemplateDef = {
   readonly y: number;
 };
 
+/**
+ * definition-time parameters for a sector's innate woodland.
+ * null on a SectorDef means that sector has no woodland at all.
+ * this is content data; current biomass is tracked separately as runtime sector state.
+ */
+export type InnateWoodlandDef = {
+  readonly maxBiomassKg: number;
+  readonly initialBiomassKg: number;
+  /** biomass at or below this level is no longer viable and stops growing */
+  readonly viabilityThresholdKg: number;
+  readonly growthRateKgPerHour: number;
+};
+
+/**
+ * definition-time parameters for a sector's local water stock.
+ * null on a SectorDef means that sector has no local water source.
+ * this is content data; current stock is tracked separately as runtime sector state.
+ */
+export type SectorWaterDef = {
+  readonly maxStockM3: number;
+  readonly initialStockM3: number;
+  readonly baselineInflowM3PerHour: number;
+};
+
+/**
+ * definition-time finite reserve/endowment record for one resource type.
+ * this is a structured sector-state record, not a spawned deposit entity — it carries
+ * no deposit ID and is addressed by (sectorId, resourceId) only.
+ */
+export type SectorReserveDef = {
+  readonly resourceId: string;
+  readonly initialQuantity: number;
+  readonly surveyed: boolean;
+};
+
 /** immutable definition of a map sector */
 export type SectorDef = {
   readonly id: string;
@@ -43,6 +78,12 @@ export type SectorDef = {
   readonly hasTown: boolean;
   /** access state assigned to this sector when a new campaign is created */
   readonly initialAccessState: SectorAccessState;
+  /** innate woodland parameters, or null if this sector has no woodland */
+  readonly innateWoodland: InnateWoodlandDef | null;
+  /** local water parameters, or null if this sector has no local water source */
+  readonly water: SectorWaterDef | null;
+  /** finite reserve/endowment records for this sector, keyed by resourceId within the array */
+  readonly reserves: readonly SectorReserveDef[];
 };
 
 /** a quantity of a named resource used in recipes and construction costs */
@@ -61,6 +102,8 @@ export type ResourceDef = {
   readonly renewable: boolean;
   readonly waste: boolean;
   readonly hazardous: boolean;
+  /** stable sprite ID resolved by every inventory/production UI row; every inventory resource must resolve one */
+  readonly iconId: string;
 };
 
 /** describes inputs, outputs, power requirements, and duration for one production step */
@@ -75,8 +118,8 @@ export type RecipeDef = {
   readonly requiredCapabilities: readonly string[];
 };
 
-/** immutable definition of a buildable facility */
-export type FacilityDef = {
+/** fields shared by every building definition, regardless of its type */
+type BuildingDefBase = {
   readonly id: string;
   readonly behaviorId: string;
   readonly validSiteTags: readonly string[];
@@ -90,6 +133,29 @@ export type FacilityDef = {
   /** default world sprite ID; omitted for facilities with no authored sprite yet */
   readonly spriteId?: string;
 };
+
+/** an ordinary building with no extraction behavior — e.g. waterwheel, workshop, forestry operation */
+export type GenericBuildingDef = BuildingDefBase & {
+  readonly type: "generic";
+};
+
+/** which sector-owned natural-resource pool an extractor building draws from */
+export type ExtractorSourceKind = "reserve" | "woodland" | "water";
+
+/**
+ * a building that moves sector reserve, woodland, or water into the company inventory.
+ * compatibleResourceIds only constrains sourceKind "reserve"; woodland/water extraction
+ * draws whatever the sector has and ignores this list.
+ */
+export type ExtractorBuildingDef = BuildingDefBase & {
+  readonly type: "extractor";
+  readonly sourceKind: ExtractorSourceKind;
+  readonly compatibleResourceIds: readonly string[];
+  readonly capacityPerHour: number;
+};
+
+/** discriminated union of every building type; `type` is the extension discriminant */
+export type BuildingDef = GenericBuildingDef | ExtractorBuildingDef;
 
 /** immutable definition of a facility upgrade */
 export type UpgradeDef = {
@@ -111,12 +177,30 @@ export type ResearchNodeDef = {
   readonly unlockIds: readonly string[];
 };
 
+/**
+ * global lifecycle/growth profile for player-planted forests. planted forests are the only
+ * separate natural-resource instances; this definition supplies the shared constants that
+ * drive their visual-state selection. runtime instances reference a profile by ID.
+ */
+export type PlantedForestProfileDef = {
+  readonly id: string;
+  readonly maxBiomassKg: number;
+  readonly growthRateKgPerHour: number;
+  /** biomass at or below this fraction of max is "nearly empty" */
+  readonly nearlyEmptyMaxFraction: number;
+  /** biomass at or below this fraction of max (and above nearlyEmptyMaxFraction) is "semi-harvested/sparse" */
+  readonly semiHarvestedMaxFraction: number;
+  /** biomass at or above this fraction of max is "mature/full" */
+  readonly matureMinFraction: number;
+};
+
 /** all typed content definitions produced by a successful load */
 export type ContentBundle = {
   readonly resources: readonly ResourceDef[];
   readonly recipes: readonly RecipeDef[];
-  readonly facilities: readonly FacilityDef[];
+  readonly buildings: readonly BuildingDef[];
   readonly upgrades: readonly UpgradeDef[];
   readonly researchNodes: readonly ResearchNodeDef[];
   readonly sectors: readonly SectorDef[];
+  readonly plantedForestProfiles: readonly PlantedForestProfileDef[];
 };

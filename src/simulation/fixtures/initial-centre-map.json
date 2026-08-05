@@ -16,7 +16,12 @@
         { "kind": "reservoir", "col": 9, "row": 5 },
         { "kind": "reservoir", "col": 10, "row": 5 },
         { "kind": "reservoir", "col": 10, "row": 6 }
-      ]
+      ],
+      "natural": {
+        "innateWoodlandBiomassKg": null,
+        "waterStockM3": null,
+        "reserves": {}
+      }
     }
   },
   "sites": {

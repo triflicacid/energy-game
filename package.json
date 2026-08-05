@@ -9,6 +9,7 @@
     "sprites:reservoir": "node --experimental-strip-types scripts/generate-reservoir-sprites.ts",
     "atlas": "node --experimental-strip-types scripts/pack-atlas.ts",
     "atlas:check": "node --experimental-strip-types scripts/pack-atlas.ts --check",
+    "icons:check": "node --experimental-strip-types scripts/check-icon-coverage.ts --check",
     "lint": "eslint .",
     "clean": "rm -r -fo dist -ErrorAction SilentlyContinue",
     "clean:web": "rm -r -fo dist/web -ErrorAction SilentlyContinue",

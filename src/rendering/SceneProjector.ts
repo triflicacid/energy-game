@@ -93,7 +93,7 @@ export function projectSectorScene(
     const template = templateByTemplateId.get(site.templateId);
     if (!template) {
       // dev warning: site has no matching template; skip without crashing
-      console.warn(`SceneProjector: site "${siteId}" templateId "${site.templateId}" not found in sector "${sector.definitionId}"`);
+      console.warn(`SceneProjector: site "${site.id}" templateId "${site.templateId}" not found in sector "${sector.definitionId}"`);
       continue;
     }
 
@@ -110,7 +110,7 @@ export function projectSectorScene(
     if (site.facilityId !== null) {
       const facilityState = state.facilities[site.facilityId];
       if (facilityState) {
-        const facilityDef = catalog.facilities.get(facilityState.definitionId);
+        const facilityDef = catalog.buildings.get(facilityState.definitionId);
         if (facilityDef?.spriteId) {
           const spriteId = facilityDef.spriteId as WorldSpriteId;
           if (WORLD_SPRITES[spriteId]) {

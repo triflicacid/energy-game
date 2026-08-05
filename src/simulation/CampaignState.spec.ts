@@ -32,6 +32,7 @@ describe("createCampaignState", () => {
     expect(idCounters.towns).toBe(0);
     expect(idCounters.sites).toBe(0);
     expect(idCounters.facilities).toBe(0);
+    expect(idCounters.plantedForests).toBe(0);
     expect(idCounters.contracts).toBe(0);
     expect(idCounters.constructionJobs).toBe(0);
   });
@@ -50,6 +51,7 @@ describe("createCampaignState", () => {
     expect(Object.keys(state.towns)).toHaveLength(0);
     expect(Object.keys(state.sites)).toHaveLength(0);
     expect(Object.keys(state.facilities)).toHaveLength(0);
+    expect(Object.keys(state.plantedForests)).toHaveLength(0);
     expect(Object.keys(state.contracts)).toHaveLength(0);
     expect(Object.keys(state.inventory.quantities)).toHaveLength(0);
   });
@@ -113,6 +115,79 @@ describe("serializeCampaignState / deserializeCampaignState", () => {
     const a = serializeCampaignState(createCampaignState({ seed: 55 }));
     const b = serializeCampaignState(createCampaignState({ seed: 55 }));
     expect(a).toEqual(b);
+  });
+});
+
+describe("sector natural state and planted forests", () => {
+  it("a sector's finite reserves are addressed by resourceId only, with no deposit runtime ID", () => {
+    const state = createCampaignState({ seed: 1 });
+    state.sectors = {
+      "sector:1": {
+        id: "sector:1",
+        definitionId: "centre",
+        accessState: "buildable",
+        presentationCells: [],
+        natural: {
+          innateWoodlandBiomassKg: 400,
+          waterStockM3: null,
+          reserves: {
+            "iron-ore": { remainingQuantity: 5000, surveyed: true },
+          },
+        },
+      },
+    };
+    const reserve = state.sectors["sector:1"]?.natural.reserves["iron-ore"];
+    expect(reserve?.remainingQuantity).toBe(5000);
+    expect(reserve?.surveyed).toBe(true);
+    // addressed by (sectorId, resourceId) — the record key is the resourceId, not a separate deposit ID
+    expect(Object.keys(state.sectors["sector:1"]?.natural.reserves ?? {})).toEqual(["iron-ore"]);
+  });
+
+  it("plantedForests collection is keyed by planted-forest ID and starts empty", () => {
+    const state = createCampaignState({ seed: 1 });
+    expect(state.plantedForests).toEqual({});
+    state.plantedForests = {
+      "planted-forest:1": {
+        id: "planted-forest:1",
+        sectorId: "sector:1",
+        profileId: "standard-planted-forest",
+        col: 4,
+        row: 4,
+        plantedAtTick: 10,
+        currentBiomassKg: 50,
+        managementPolicy: "rotation",
+      },
+    };
+    expect(Object.keys(state.plantedForests)).toHaveLength(1);
+    expect(state.plantedForests["planted-forest:1"]?.sectorId).toBe("sector:1");
+  });
+
+  it("planted forest and sector natural state round-trip through serialize/deserialize", () => {
+    const state = createCampaignState({ seed: 3 });
+    state.sectors = {
+      "sector:1": {
+        id: "sector:1",
+        definitionId: "centre",
+        accessState: "buildable",
+        presentationCells: [],
+        natural: { innateWoodlandBiomassKg: 100, waterStockM3: 200, reserves: {} },
+      },
+    };
+    state.plantedForests = {
+      "planted-forest:1": {
+        id: "planted-forest:1",
+        sectorId: "sector:1",
+        profileId: "standard-planted-forest",
+        col: 1,
+        row: 1,
+        plantedAtTick: 0,
+        currentBiomassKg: 10,
+        managementPolicy: "selective",
+      },
+    };
+    const restored = deserializeCampaignState(serializeCampaignState(state));
+    expect(restored.sectors["sector:1"]?.natural).toEqual(state.sectors["sector:1"]?.natural);
+    expect(restored.plantedForests).toEqual(state.plantedForests);
   });
 });
 
