@@ -5,6 +5,7 @@
   "main": "dist/electron/main.js",
   "type": "module",
   "scripts": {
+    "sprites:forest": "node --experimental-strip-types scripts/generate-forest-sprites.ts",
     "sprites:reservoir": "node --experimental-strip-types scripts/generate-reservoir-sprites.ts",
     "atlas": "node --experimental-strip-types scripts/pack-atlas.ts",
     "atlas:check": "node --experimental-strip-types scripts/pack-atlas.ts --check",

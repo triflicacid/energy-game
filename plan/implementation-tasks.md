@@ -39,6 +39,13 @@ Every delegated task must preserve these decisions unless the owner explicitly c
 13. **No freight routing:** materials initially use a company-wide inventory and automatic delivery/import abstraction.
 14. **No city builder:** towns expose energy demand, growth, and contracts but do not expose individual streets, buildings, or citizens.
 15. **Scope discipline:** do not add multiplayer, a full commodity economy, AC electrical simulation, or speculative framework infrastructure.
+16. **Natural-resource ownership:** finite reserves, innate woodland, and water are structured sector state, not spawned resource entities. Player-planted forests are the only separate natural-resource instances.
+17. **Extraction boundary:** compatible operational extraction facilities are required to move sector reserves or woodland into inventory; facility capacity never enlarges natural stock.
+18. **Forest terminal depletion:** innate woodland grows only while viable and disappears permanently at complete depletion; deliberate planting creates a separate planted-forest instance.
+19. **Water conservation:** reservoirs add capture, retention, usable storage, and withdrawal/release capability, never water or an instant fill.
+20. **One material inventory:** extraction, harvest, processing, imports, decommissioning, and recycling use exactly one company-wide inventory. There are no sector, warehouse, extractor, or general facility inventories in the current scope.
+21. **Recovery is not replenishment:** recycled goods enter company inventory and never increase finite reserves, woodland biomass, or sector water.
+22. **Required resource art:** every inventory resource resolves an icon; forest presentation covers freshly planted, growing, mature/full, semi-harvested/sparse, and nearly-empty states, while depleted forests have no sprite.
 
 ## Agent execution rules
 
@@ -88,9 +95,10 @@ Follow-up issues: <none or concise list>
      └─ ✅ F00 source boundaries
          ├─ ✅ F01 event bus
          ├─ ✅ F02 units and IDs
-         ├─ ✅ F03 deterministic random
-         └─ ✅ C00 content structural validation
-             └─ ✅ C01 content catalog and semantic validation
+          ├─ ✅ F03 deterministic random
+          └─ ✅ C00 content structural validation
+              └─ ✅ C01 content catalog and semantic validation
+                  └─ C02 natural-resource and inventory presentation schema
 
 F01 + F02 + F03 + C01
  └─ ✅ S00 fixed simulation clock
@@ -99,7 +107,7 @@ F01 + F02 + F03 + C01
          ├─ ✅ S03 research progression
          └─ ✅ M00 hand-authored centre sector
 
-S02 + S03 + M00
+S02 + S03 + M00 + C02 + A01
  └─ V00 forestry and timber
      └─ V01 mechanical power
          └─ V02 first headless vertical slice
@@ -108,6 +116,7 @@ S02 + S03 + M00
 
 F00
  └─ ✅ A00 sprite-atlas pipeline
+     ├─ A01 forest lifecycle and inventory-icon assets (+ C02)
      └─ ✅ U00 browser application shell
          ├─ ✅ U01a atlas/canvas drawing foundation
          │   └─ ✅ U01b read-only world scene (+ M00)
@@ -115,7 +124,7 @@ F00
          │           │   (camera core also complete — see U01e note below)
          │           └─ U01d reservoir/town variants
          │               └─ U01e (remainder) interaction rendering (+ U02)
-         └─ U02 HTML status/build/research UI (+ S02 + S03 + V01)
+         └─ U02 HTML status/build/research UI (+ S02 + S03 + V01 + C02 + A01)
 
 E00 + V02
  └─ E01 dynamo and first electricity
@@ -301,6 +310,29 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 - Tests cover duplicate, missing, cyclic, unreachable, and circular-unlock cases.
 - Simulation consumes normalized definitions, not raw JSON.
 
+## C02 — Natural-resource and inventory presentation schema
+
+**Depends on:** C01
+
+**Read:** `plan/resources-and-recycling.md`, `plan/map-and-regions.md`, `plan/data-driven-content.md`, `plan/sprites-and-atlases.md`
+
+**Deliverables:**
+
+- Extend resource definitions with a mandatory icon ID for every company-inventory resource and migrate all fixtures.
+- Define validated sector state shapes for finite reserve/endowment records, innate woodland, and local water without introducing deposit entities or IDs.
+- Define player-planted forest content/runtime shapes as the only separate natural-resource instances.
+- Define typed extraction-facility compatibility with sector reserve, woodland, or water source kinds.
+- Validate one-company-inventory semantics; do not add warehouse, sector, extractor, or general facility inventories.
+- Add cross-catalog reports for inventory-icon coverage and reserve-to-extractor coverage.
+
+**Acceptance:**
+
+- Every inventory resource resolves a known icon and a missing icon produces a precise validation issue.
+- Every extractable reserve type has a compatible facility path.
+- Natural reserve records are addressable by sector ID and resource ID with no deposit runtime ID.
+- Recycling outputs can reference inventory resources only and cannot target natural sector state.
+- Existing opening content is migrated and all structural/semantic validation tests pass.
+
 # Phase S: headless simulation foundation
 
 ## ✅ S00 — Fixed simulation clock
@@ -327,7 +359,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 
 **Deliverables:**
 
-- Minimal campaign state containing version, seed/random state, time, money, inventories, research state, sectors, towns, facilities, and contracts.
+- Minimal campaign state containing version, seed/random state, time, money, one company-wide inventory, research state, sectors, towns, facilities, and contracts.
 - Read-only access boundary for presentation.
 - Bounded history of meaningful typed events.
 - No Canvas, DOM, callbacks, subscriptions, or duplicated definitions in state.
@@ -349,6 +381,7 @@ Tasks on separate branches of this graph may run in parallel only when they do n
 - Atomic recipe execution: consume all required inputs or change nothing.
 - Power/time requirements may be represented but only enforce those needed by the opening slice.
 - Meaningful inventory/recipe events.
+- No sector, warehouse, extractor, or general facility inventory is introduced.
 
 **Tests:** insufficient inputs, exact inputs, surplus inputs, outputs/by-products, nonnegative invariants, repeated execution, conservation expectations.
 
@@ -390,25 +423,33 @@ Each research facility independently assigns its output to a target node. The `R
 - Sector contains independent town IDs rather than embedded aggregate town state.
 - Site eligibility is validated through content tags.
 
+**Follow-up:** C02 and V00 migrate the baseline forest-site fixture to sector-owned innate woodland plus a separate forestry-facility placement opportunity.
+
 ## V00 — Forestry and timber
 
-**Depends on:** S02, M00
+**Depends on:** S02, M00, C02, A01
 
 **Read:** `plan/resources-and-recycling.md`, `plan/seasons-demand-and-water.md`
 
 **Deliverables:**
 
-- Forest current/max biomass and growth.
-- Forestry operation harvesting into company inventory.
+- Sector-owned innate woodland current/max biomass, viability, and growth.
+- Migration of the M00 forest-site fixture and existing forest rendering to the agreed sector-state model.
+- Forestry operation selecting and harvesting innate woodland or a player-planted forest into the single company inventory.
+- Player planting that creates the only separate natural-resource instance, with age, current/max biomass, condition, and lifecycle state.
 - Sustainable and over-harvest behavior.
 - Relevant events and forecast values.
 - Use a simple constant growth factor until seasons are implemented.
+- Presentation-facing states for freshly planted, growing, mature/full, semi-harvested/sparse, nearly empty, and depleted/absent woodland.
 
 **Acceptance:**
 
 - Forest cannot produce more biomass than exists.
-- Growth does not exceed capacity.
-- Long-run sustainable and destructive cases are tested.
+- Viable woodland grows without exceeding capacity; zero/nonviable innate woodland does not regrow.
+- Complete innate-woodland depletion removes its visual and requires deliberate planting to restore forest cover.
+- Planted forests transition through every lifecycle state and disappear when depleted.
+- Both source types feed the same company inventory, and no generic natural-resource entity is introduced.
+- Long-run sustainable, partial-harvest, clear-cut, depletion, and replanting cases are tested.
 
 ## V01 — Mechanical power network
 
@@ -503,6 +544,22 @@ Integrate a tested scenario:
 - Duplicate IDs, missing sources, incomplete/oversized explicit rows, out-of-bounds rectangles, and stale generated output fail clearly.
 - Gameplay footprint remains in facility content; simulation imports no atlas or sprite types.
 
+## A01 — Forest lifecycle and inventory-icon assets
+
+**Depends on:** A00, C02
+
+**Read:** natural-resource visual-state and inventory-icon sections of `plan/sprites-and-atlases.md`
+
+**Deliverables:**
+
+- Add mature/full, semi-harvested/sparse, and nearly-empty innate-woodland source sprites.
+- Add freshly planted, growing, mature/full, semi-harvested/sparse, and nearly-empty planted-forest source sprites.
+- Do not add a depleted forest sprite; depletion is represented by absence.
+- Add a stable icon asset and visual-catalog entry for every current inventory resource.
+- Pack world sprites through the existing deterministic pipeline and provide deterministic icon resolution whether icons use an atlas or individual SVGs.
+
+**Acceptance:** every required forest state and inventory resource resolves a stable visual ID; missing, duplicate, stale, or unreferenced assets fail clearly; forest overlays preserve biome transparency; resource icons remain legible at inventory-row size; asset generation/check mode and relevant visual tests pass.
+
 ## U01a — Atlas and canvas drawing foundation
 
 **Depends on:** U00, A00
@@ -536,6 +593,8 @@ Integrate a tested scenario:
 - Emit a forest visual for standing forest, but no visual command for empty `general-site` or `waterwheel-site` suitability.
 
 **Acceptance:** equal semantic input produces deeply equal scene commands; shuffled collection iteration does not alter output; missing definitions/layout identity fail visibly in development; projection does not mutate campaign state or content.
+
+**Follow-up:** V00 extends the scene projection to distinguish innate sector woodland from planted-forest instances, select each lifecycle sprite, omit terminally depleted forest visuals, and avoid visuals for empty forestry-placement opportunities.
 
 ## U01c — Layered centre-sector composition
 
@@ -597,12 +656,12 @@ Integrate a tested scenario:
 
 ## U02 — Initial HTML UI
 
-**Depends on:** U00, S02, S03, V01
+**Depends on:** U00, S02, S03, V01, C02, A01
 
 **Deliverables:**
 
 - Time controls.
-- Money/resource display.
+- Global company-inventory display with resolved resource icon, localized label, quantity, and unit for every row.
 - Selected sector/site/facility details.
 - Minimal build controls.
 - Minimal research list or graph using HTML controls; SVG may draw dependency edges.
@@ -610,22 +669,23 @@ Integrate a tested scenario:
 - Global research assignment shortcut: reassign all facilities to the same node in one action; implemented as a UI iteration over facility assignments, not a change to `ResearchManager`.
 - Keyboard focus and modal/panel behavior.
 
-**Acceptance:** normal buttons are keyboard accessible; typing/focus does not trigger map shortcuts; UI updates from events/read-only state without polling every animation frame.
+**Acceptance:** normal buttons are keyboard accessible; typing/focus does not trigger map shortcuts; UI updates from events/read-only state without polling every animation frame; missing resource icons fail validation or show a clear development diagnostic rather than a blank; no warehouse or sector-inventory panel exists.
 
 # Phase E: first electricity and contract
 
 ## E00 — Iron, copper, and early processing
 
-**Depends on:** V02, C01
+**Depends on:** V02, C02
 
 **Deliverables:**
 
 - Data definitions for iron ore, iron, copper ore, copper, charcoal, and wire.
-- Deposit state, survey estimate, extraction capacity, and finite reserve.
-- Mine and simple smelting/wire recipes.
+- Iron and copper finite reserve/endowment records inside sector state, including survey knowledge and remaining quantity.
+- Mine facility state with compatible source selection and extraction capacity; no deposit entity or runtime deposit ID.
+- Extraction behavior that moves ore into company inventory, plus simple smelting/wire recipes.
 - Unlocks through research definitions.
 
-**Acceptance:** no content ID is hard-coded in generic extraction/recipe logic; deposits cannot yield beyond reserve; recipe tests cover shortages and outputs.
+**Acceptance:** no content ID is hard-coded in generic extraction/recipe logic; extraction requires an operational compatible mine; extraction cannot exceed the selected sector reserve, reaches exactly zero without becoming negative, and stops at exhaustion; recycled iron/copper never changes sector reserves; deterministic generation and serialization preserve reserve records; recipe tests cover shortages and outputs.
 
 ## E01 — Dynamo and electrical production
 
@@ -687,13 +747,13 @@ Integrate a tested scenario:
 
 **Deliverables:**
 
-- Sector water stock, inflow, evaporation, reserve, and withdrawals.
-- Abstract reservoir facility.
+- Sector-local water stock, rainfall/inflow, baseline capture, retention, evaporation, environmental reserve, withdrawals, releases, and spill.
+- Abstract reservoir facility adding finite capture, retention/effective recharge, usable storage, and withdrawal/release capacity.
 - Waterwheel/hydro availability from flow/storage.
 - Priority behavior during shortage.
 - Presentation-facing reservoir extent/join-group state where needed for autotile selection; this state must not calculate or override capacity or water balance.
 
-**Acceptance:** water balance reconciles every tick; no generated lake/river terrain; visual reservoir shape does not determine storage or connectivity; drought and overflow cases are tested.
+**Acceptance:** water balance reconciles every tick; construction alone leaves water unchanged; a reservoir starts empty unless initial water is explicitly accounted and otherwise fills only from later captured inflow; captured water never exceeds available inflow or storage capacity; withdrawal is rate/capacity limited; no generated lake/river terrain; visual reservoir shape does not determine storage or connectivity; rainy-season fill, drought, empty, evaporation, and overflow/spill cases are tested.
 
 ## R00 — Bills of materials and decommissioning
 
@@ -717,8 +777,9 @@ Integrate a tested scenario:
 - Less-than-perfect recovery with energy cost.
 - Expensive imports for essential resources.
 - Clear accounting of extraction, imports, consumption, recovery, and loss.
+- All recovered goods enter the same company inventory used by extraction and processing; do not add warehouse inventories.
 
-**Acceptance:** no infinite material loop; imports prevent construction deadlocks; mass/accounting tests pass.
+**Acceptance:** no infinite material loop; imports prevent construction deadlocks; mass/accounting tests pass; recovery never modifies geological reserves, innate woodland, planted-forest biomass, or sector water; reports distinguish fresh extraction, imports, and recovery.
 
 # Phase X/G: frontier and multi-sector game
 
@@ -729,11 +790,12 @@ Integrate a tested scenario:
 **Deliverables:**
 
 - Generate connected 8–12 sector graph from a seed.
-- Assign centre, biome, sites, deposits, climate, and zero-to-many town placeholders.
+- Assign centre, biome, placement sites, structured finite-reserve/endowment records, innate woodland viability, sector-water parameters, and zero-to-many town placeholders.
+- Create optional planted forests as the only separate natural-resource instances; never create deposit entities or deposit IDs.
 - Keep gameplay graph separate from visual layout.
 - Viability validator and deterministic fixtures.
 
-**Acceptance:** same seed is identical; graph is connected; empty and multi-town sectors occur in tested seeds; viable opening loop is guaranteed.
+**Acceptance:** same seed produces identical reserve, woodland, and water records; graph is connected; empty and multi-town sectors occur in tested seeds; generated natural reserves have no runtime entity IDs; required reserves have reachable compatible extraction paths; viable woodland or a planting path and useful water-access routes are guaranteed.
 
 ## X01 — Exploration, biome permissions, and acquisition
 
@@ -769,7 +831,7 @@ Integrate a tested scenario:
 
 - Sector interconnections, substations, capacity, and loss.
 - Automatic deterministic dispatch with simple player-configurable priorities.
-- At least one electrical storage type plus reservoir storage.
+- At least one electrical storage type plus reservoir hydro using accounted sector water and reservoir capture/retention semantics.
 - Multiple town contracts and congestion accounting.
 - Grid/demand/contract calculation breakdowns.
 

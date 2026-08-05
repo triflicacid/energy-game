@@ -107,15 +107,18 @@ Useful interactions:
 - Reservoir hydro, fuel plants, and storage cover forecast peaks.
 - Flexible electrolysis, pumping, charging, and industrial loads consume surplus energy.
 
-## Regional water model
+## Sector-local water model
 
-Water is a regional stock and flow, not generated terrain.
+Water is innate sector-local stock and flow, not generated terrain or a global inventory good.
 
-A region defines:
+A sector defines:
 
-- Current stored water
-- Natural and constructed storage capacity
-- Seasonal inflow curve
+- Current water
+- Natural retention limit
+- Seasonal rainfall and inflow curve
+- Baseline capture/effective recharge
+- Reservoir-added capture, retention, and usable storage capacity
+- Reservoir withdrawal and release capacity
 - Weather-adjusted rainfall/snowmelt
 - Evaporation
 - Environmental minimum reserve/release
@@ -125,9 +128,11 @@ A region defines:
 
 Per interval:
 
-`next storage = current storage + inflow − withdrawals − evaporation − required releases`
+`captured inflow = available rainfall and inflow × effective capture fraction`
 
-A reservoir is a regional facility that increases controllable storage. No simulated lake shape or pipe routing is required.
+`next water = current water + captured inflow − withdrawals − evaporation − required releases − spill`
+
+A reservoir is a sector facility that improves rainy-season capture, retention/effective recharge, usable storage, and withdrawal or release capacity. Capture cannot exceed available rainfall and inflow, and stored water cannot exceed usable capacity. Reservoir construction adds capability, not water: a new reservoir starts empty unless an initial quantity comes from an explicitly accounted transfer, and otherwise fills only from later captured inflow. No simulated lake shape or pipe routing is required.
 
 The map may present a reservoir with transparent connected water tiles over the normal biome background. The renderer selects one of 16 north/east/south/west variants for each visual cell and joins only cardinal neighbors in the same reservoir visual group. This presentation shape is derived from state for readability; it never determines capacity, inflow, evaporation, facility footprint, water balance, or simulation connectivity.
 
@@ -194,11 +199,16 @@ A hydro site defines head class, flow, storage potential, capacity limit, and en
 
 Reservoir decisions include:
 
+- Build capture and retention capacity before an expected rainy season
+- Manage fill trajectory, evaporation, overflow, and spill
+- Respect withdrawal, release, and turbine-rate limits
 - Generate now or save water for a forecast peak
 - Maintain emergency reserve
 - Prepare for drought or flood inflow
 - Share water with towns and cooling
 - Pump water uphill when electricity is cheap
+
+Pumped storage transfers already-accounted sector water and incurs losses; it cannot create net water. Reservoir visual extent is never authoritative simulation state.
 
 ## Suggested time model
 

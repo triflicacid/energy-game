@@ -50,7 +50,9 @@ Tests:
 Content:
 
 - One starting centre sector and town
-- Forest stock and seasonal regrowth
+- Sector-owned innate woodland that grows while viable and can be permanently depleted
+- Player-planted forest instances and freshly planted, growing, mature/full, semi-harvested/sparse, and nearly-empty sprites
+- Inventory icons for timber, wood waste, and every other inventory resource in the slice
 - Logging, sawmill, mechanical workshop, and charcoal kiln
 - Waterwheel and windmill
 - Site-local mechanical-power network
@@ -58,7 +60,7 @@ Content:
 
 Player experience:
 
-1. Harvest and replant timber.
+1. Harvest viable innate woodland or establish and manage a planted forest.
 2. Build a waterwheel or windmill.
 3. Mechanically process timber.
 4. Generate early research.
@@ -68,14 +70,16 @@ Exit criteria:
 
 - Mechanical supply/demand is visible and understandable.
 - Forestry can be sustained or exhausted.
+- Complete depletion removes forest cover; planting creates a separate lifecycle instance rather than reviving innate woodland.
+- Harvested goods enter the one global company inventory and every inventory row has an icon.
 - The opening takes minutes, not hours.
 
 ## Phase 2: first electricity and contract
 
 Content:
 
-- Iron and copper deposit/survey
-- Small mine, smelter/forge, and wire production
+- Iron and copper sector reserve/endowment survey
+- Small extraction facilities, smelter/forge, and wire production
 - Dynamo
 - Primitive cable and town connection
 - Hourly town demand
@@ -94,6 +98,7 @@ Exit criteria:
 - Power is sold only when delivered.
 - Capacity, energy, loss, and unmet demand are clear.
 - No resource or research circular dependency exists.
+- Extraction cannot exceed finite sector reserves and does not use deposit entities.
 
 ## Phase 3: first seasonal energy portfolio
 
@@ -104,7 +109,7 @@ Content:
 - Reinforced waterwheel/small hydro path
 - Dynamo windmill/early turbine path
 - Charcoal steam backup
-- Reservoir water balance
+- Sector-local water balance with reservoir capture, retention/effective recharge, fill, spill, and withdrawal limits
 - Forecast UI
 
 Scenario:
@@ -116,6 +121,7 @@ Exit criteria:
 - Forecasts support planning.
 - At least two viable strategies exist.
 - Seasonal variation changes decisions without feeling arbitrary.
+- Reservoir construction creates no water and filling occurs only from subsequent accounted inflow or transfer.
 
 ## Phase 4: materials and circularity
 
@@ -128,12 +134,15 @@ Content:
 - Decommission options
 - Scrap, rubble, e-waste, and recycling center
 - Expensive material imports
+- Mandatory icons for every inventory resource
 
 Exit criteria:
 
 - Decommissioned infrastructure creates traceable recoverable material.
 - Recycling has energy cost and less-than-perfect recovery.
 - Imports prevent deadlocks but local circular production is rewarding.
+- Extraction, imports, decommissioning, and recycling all use one global inventory with no warehouse inventories.
+- Recovered goods never replenish geological reserves, woodland biomass, or sector water.
 
 ## Phase 5: sector grid MVP
 
@@ -141,7 +150,8 @@ Content:
 
 - 8–12 sector graph
 - Small initially accessible area around a centre sector; the rest begins as frontier/unknown
-- Sector archetypes, sites, deposits, and climate
+- Sector archetypes, placement sites, finite reserve/endowment records, innate woodland, local water, and climate
+- Optional planted forests as the only separate natural-resource instances; no generated deposit entities
 - Explorer research tiers controlling maximum distance from the centre
 - Separate data-defined biome exploration and construction requirements
 - Explored/surveyed/unlocked/buildable sector states
@@ -216,7 +226,7 @@ Every unexpected value should have a breakdown: output, demand, cost, resource u
 
 ### Forecasting
 
-Show future ranges for weather, demand, water, fuel runway, deposit depletion, construction, and maintenance.
+Show future ranges for weather, demand, water capture/fill/withdrawal, fuel runway, sector-reserve depletion, woodland viability, planted-forest growth, construction, and maintenance.
 
 ### Determinism
 
@@ -238,7 +248,7 @@ A useful initial scenario arc:
 
 1. Inherit a forest and basic workshop.
 2. Build mechanical water/wind power.
-3. Discover iron and copper.
+3. Survey iron and copper sector reserves.
 4. Construct the first dynamo.
 5. Connect Greenfield and supply evening electricity.
 6. Expand before seasonal water flow falls.
@@ -256,8 +266,10 @@ This single scenario exercises the distinctive design before advanced plant brea
 - Curtailment and storage utilization
 - Player income and cash runway
 - Material extraction, import, recovery, and loss
-- Forest stock trend
-- Water reserve trend
+- Fresh extraction, imports, and recovery as separate contributions to global inventory
+- Innate woodland viability and stock trend
+- Planted-forest lifecycle and stock trend
+- Sector-water inflow, captured amount, fill, spill, withdrawal, and reserve trend
 - Plant capacity factor and maintenance downtime
 - Research-node selection order
 - Frequency of emergency imports

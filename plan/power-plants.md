@@ -94,10 +94,12 @@ The site recommends low-, medium-, or high-head machinery. Upgrades include runn
 
 ### Reservoir hydro — Era 3–4
 
-- Stores inflow for dispatchable peak output
+- Uses sector-local water and improves rainy-season capture, retention, usable storage, and withdrawal for dispatchable peak output
 - Competes for water and has environmental cost
 
 Upgrades: greater storage, additional turbine, spillway, sediment control, variable-speed turbine, digital water scheduling.
+
+Construction adds capability rather than water. A reservoir fills only from later accounted inflow or transfer; it never fills instantly. Pumped storage moves already-accounted water with losses and cannot create net water.
 
 ### Pumped-storage hydro — Era 4
 
@@ -283,7 +285,7 @@ Later systems:
 - Reprocessing recovers some usable uranium/plutonium and leaves concentrated waste.
 - Mixed-oxide fabrication supplies compatible reactors.
 - Advanced partitioning supports waste-burning fast reactors.
-- Closed fuel cycles greatly extend reserves but retain processing losses and disposal needs.
+- Closed fuel cycles reduce fresh draw on finite uranium/thorium sector reserves by returning recovered fuel material to the global company inventory, but retain processing losses and disposal needs. They never increase geological reserve records.
 
 Recycling is a fuel-cycle facility, not a reactor type.
 
@@ -393,7 +395,7 @@ Advanced deuterium, helium-3, or proton–boron fuels belong only in speculative
 
 - **Upgrade:** modifies equipment while preserving plant identity.
 - **Retrofit:** replaces a major subsystem, requires substantial downtime and materials.
-- **Successor:** decommission/recycle old equipment and reuse eligible site, connection, reservoir, water right, and civil work.
+- **Successor:** decommission/recycle old equipment and reuse eligible site, connection, reservoir infrastructure, currently accounted water, water right, and civil work. Reuse does not grant a newly filled reservoir.
 
 Common axes are capacity, efficiency, flexibility, reliability, lifetime, water use, pollution, waste, and automation. Some choices are exclusive: wet/dry cooling, gearbox/direct drive, low-wind/storm rotor, maximum efficiency/fast ramping, and electricity/process-heat specialization.
 

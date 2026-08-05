@@ -33,7 +33,7 @@ They do not manage individual residents, roads, shops, housing, or a complete co
 
 ### Strategic: years and eras
 
-- Replace depleted deposits and obsolete plants.
+- Replace or relocate extraction facilities as finite sector reserves are exhausted, and replace obsolete plants.
 - Expand to new regions and larger town contracts.
 - Transition from mechanical power to electricity and from carbon-intensive generation to advanced systems.
 - Build increasingly circular material and nuclear-fuel cycles.
@@ -125,7 +125,7 @@ Recovery routes include:
 - Refurbishing instead of replacing a plant
 - Researching efficiency or an alternative technology
 
-Bankruptcy, if included, should be an explicit scenario condition rather than an accidental result of having exhausted the only deposit.
+Bankruptcy, if included, should be an explicit scenario condition rather than an accidental result of having exhausted the only accessible sector reserve. Emergency imports enter the same global company inventory as extracted and recovered goods.
 
 ## Player information
 
@@ -136,8 +136,10 @@ Decisions should depend on forecasts rather than hidden randomness. The UI shoul
 - Delivered, curtailed, stored, and unmet energy
 - Contract revenue and projected penalties
 - Fuel runway at current use
-- Deposit reserve and decline forecast
-- Reservoir forecast
+- Sector reserve/endowment quantity, survey confidence, and decline forecast associated with each extractor
+- Innate woodland viability/depletion risk and planted-forest lifecycle forecast
+- Reservoir inflow, capture, fill, spill, and withdrawal forecast
+- Global inventory contribution breakdown for fresh extraction, imports, and recovery
 - Plant condition and scheduled downtime
 - Material requirements for planned projects
 - Expected construction and payback periods
@@ -147,7 +149,7 @@ Decisions should depend on forecasts rather than hidden randomness. The UI shoul
 Use a restrained set:
 
 - **Money:** contracts, imports, operating costs, and construction
-- **Materials:** physical construction, operation, retrofit, and recycling
+- **Materials:** goods in the single global company inventory used for construction, operation, retrofit, and recycling; unextracted sector reserves, standing woodland, and local water are not inventory
 - **Research:** unlocks capabilities and designs
 - **Time:** construction, experiments, maintenance, forestry growth, and fuel processing
 - **Energy:** powers extraction, factories, recycling, and research

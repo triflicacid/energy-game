@@ -278,6 +278,70 @@
       "footprintW": 2, "footprintH": 1,
       "anchorX": 0, "anchorY": 0,
       "atlasRow": 3
+    },
+    {
+      "id": "innate-woodland-mature-full",
+      "src": "world/innate-woodland-mature-full.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 4
+    },
+    {
+      "id": "innate-woodland-semi-harvested-sparse",
+      "src": "world/innate-woodland-semi-harvested-sparse.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 4
+    },
+    {
+      "id": "innate-woodland-nearly-empty",
+      "src": "world/innate-woodland-nearly-empty.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 4
+    },
+    {
+      "id": "planted-forest-freshly-planted",
+      "src": "world/planted-forest-freshly-planted.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 4
+    },
+    {
+      "id": "planted-forest-growing",
+      "src": "world/planted-forest-growing.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 4
+    },
+    {
+      "id": "planted-forest-mature-full",
+      "src": "world/planted-forest-mature-full.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 4
+    },
+    {
+      "id": "planted-forest-semi-harvested-sparse",
+      "src": "world/planted-forest-semi-harvested-sparse.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 4
+    },
+    {
+      "id": "planted-forest-nearly-empty",
+      "src": "world/planted-forest-nearly-empty.svg",
+      "pixelWidth": 64, "pixelHeight": 64,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 4
     }
   ]
 }

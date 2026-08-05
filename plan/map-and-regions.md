@@ -17,10 +17,11 @@ Each sector defines:
 - ID, name, archetype, and neighboring sectors
 - Day/night and seasonal climate profile
 - Wind, solar, geothermal, coastal, and hydro potential
-- Forest stock, capacity, growth, and seasonal accessibility
-- Sector water inflow, storage, evaporation, and environmental reserve
-- Known and hidden resource deposits
-- General, extraction, forest, water, coastal, and geothermal sites
+- Innate woodland stock, capacity, viability, growth, and seasonal accessibility
+- Sector-local water stock, inflow, capture, retention, evaporation, and environmental reserve
+- Known and hidden finite reserve/endowment records keyed by resource type, including quantity, quality, accessibility, survey confidence, and exhaustion
+- References to player-planted forest instances
+- General, extraction, forestry, water, coastal, and geothermal facility-placement sites
 - Existing transmission and import access
 - Environmental sensitivity and pollution capacity
 
@@ -32,6 +33,8 @@ Town instances are separate entities that reference their containing sector. A s
 - Gain additional player-founded towns during the campaign
 
 Generation should intentionally include empty sectors so remote resources and generation require strategic transmission investment.
+
+Natural reserve, innate woodland, and water records are structured sector state, not spawned resource entities, and do not need runtime entity IDs. Player-planted forests are the only separately instantiated natural resources. Placement sites constrain facilities independently of the natural state they access.
 
 ## Site categories
 
@@ -47,21 +50,23 @@ Support facilities without a special geographic requirement:
 
 ### Extraction sites
 
-Contain a finite deposit such as:
+Identify places where a compatible facility can access a sector reserve such as:
 
 - Iron, copper, gold, uranium, coal, oil, or gas
 - Aggregate or silica
 
-A survey reveals an increasingly accurate reserve estimate. A mine or well determines extraction capacity; reserve size determines its lifetime.
+A survey reveals increasingly accurate knowledge on the sector reserve record. A mine, quarry, or well is required for extraction and determines extraction capacity; the sector's remaining reserve determines its lifetime. An extraction site is not a deposit and does not own the reserve.
 
 ### Forest sites
 
-Track renewable biomass and support:
+Provide placement and access for forestry facilities that support:
 
 - Managed forestry
 - Conservation
 - Sawmills and charcoal works
 - Biomass generation
+
+Innate woodland biomass remains sector-owned state and is projected visually without becoming a site or entity. It grows only while viable; complete depletion removes it and requires deliberate planting rather than spontaneous recovery. Player-planted forests are separate lifecycle instances and are the only instantiated natural resources.
 
 ### Water and hydro sites
 
@@ -76,6 +81,8 @@ Define abstract hydrological opportunities:
 The player builds on a named semantic site; no river or lake geometry is simulated. A site or tag such as `waterwheel-site` constrains placement but is not itself a persistent map sprite. The completed waterwheel is rendered only when the facility exists.
 
 Reservoir facilities may use connected water autotiles to communicate their extent visually. Those tiles are presentation overlays over the biome, not generated terrain: their shape and cell count do not define storage capacity, water balance, facility footprint, or simulation connectivity.
+
+Reservoirs access local sector water and add rainy-season capture, retention, usable storage, and withdrawal or release capacity. They do not create water or fill on construction. Contents increase only through later captured inflow or an explicitly accounted transfer.
 
 ### Wind and solar sites
 
@@ -97,7 +104,7 @@ Contain temperature, depth, flow, and depletion/recovery characteristics.
 
 ## Placement principles
 
-Construction mode visualizes placement rules directly. After a facility is selected, valid cells or footprints receive a faint transient outline derived from site tags, ownership, research/biome access, occupancy, and the facility's other placement requirements. General and water-specific opportunities do not use placeholder building sprites. Physical resources such as standing forest remain visible outside construction mode because they exist in the world independently of a proposed build.
+Construction mode visualizes placement rules directly. After a facility is selected, valid cells or footprints receive a faint transient outline derived from site tags, ownership, research/biome access, occupancy, and the facility's other placement requirements. General and water-specific opportunities do not use placeholder building sprites. Innate woodland is projected from sector state, while planted woodland is projected from its separate instance state; both remain visible outside construction mode until depleted.
 
 Location should matter through energy-relevant constraints:
 
@@ -109,7 +116,7 @@ Location should matter through energy-relevant constraints:
 - Site capacity
 - Environmental consequences
 
-Materials initially move through a company-wide inventory, so placing a plant does not require building a transport network. A later sector-inventory mode may add automatic freight cost, delay, and transfer limits without vehicle routing.
+Materials move through exactly one company-wide inventory, so placing a plant does not require building a transport network. There are no sector, warehouse, extractor, or general facility inventories in the current scope. A later sector-inventory mode may add automatic freight cost, delay, and transfer limits without vehicle routing.
 
 ## Expansion
 
@@ -131,7 +138,7 @@ A sector progresses through explicit states:
 - **Unknown:** outside current knowledge or explorer range.
 - **Frontier:** its location/broad biome may be visible, but details are hidden.
 - **Explored:** biome, towns, visible sites, and broad potential are known.
-- **Surveyed:** deposits and site quality have more accurate estimates.
+- **Surveyed:** sector reserves/endowments and site quality have more accurate estimates.
 - **Unlocked:** acquisition has been paid and normal operations are permitted.
 - **Buildable:** all required biome-construction research for a proposed facility is available.
 
@@ -185,7 +192,7 @@ Different sector archetypes encourage complementary systems:
 - Forested cold sector: timber and hydro, weak winter solar, high heating demand
 - Windy coast: offshore wind and imports, storm exposure
 - Dry interior: strong solar and uranium, limited cooling water
-- Industrial basin: high steady demand, pollution legacy, coal deposits
+- Industrial basin: high steady demand, pollution legacy, coal reserves
 - Volcanic region: geothermal potential and seismic risk
 
 ## Generated-map safeguards
@@ -202,7 +209,11 @@ Generation must validate that every campaign contains:
 - Sufficient water or a low-water technology route
 - Access to imports before finite resources can cause deadlock
 - A connected path to every required sector
-- Long-term options after initial deposits deplete
+- Long-term options after initial sector reserves deplete
+- Finite reserves represented as sector records rather than entities, with a reachable compatible extractor path for required resources
+- Initially viable innate woodland or an explicit path to planting, and no spontaneous recovery after terminal depletion
+- Useful local water together with a suitable reservoir or water-access path
+- No recycling route that replenishes a geological reserve
 - No technology whose prerequisite resource requires that same technology
 
 Invalid graphs should be regenerated.
@@ -213,8 +224,8 @@ Sites retain history:
 
 - A waterwheel site can later host modern small hydro.
 - A wooden wind installation can be replaced while retaining its grid connection.
-- A depleted mine can become pumped storage, compressed-air storage, geothermal, waste storage, restored land, or another industrial site.
-- An exhausted oil or gas reservoir may support gas, hydrogen, or carbon storage.
+- A closed mine site over an exhausted sector reserve can become pumped storage, compressed-air storage, geothermal, waste storage, restored land, or another industrial site.
+- A closed oil or gas extraction site over an exhausted sector reserve may support gas, hydrogen, or carbon storage.
 - A closed facility leaves reusable materials, contamination, or remediation work.
 
 This rewards long-term planning without requiring one facility to transform implausibly into another.
@@ -279,7 +290,11 @@ For the first playable campaign:
 - Generated starting towns plus the ability to found a new town at a valid settlement site
 - Centre distance, access state, biome exploration/build requirements, and acquisition cost for every sector
 - A small number of typed construction sites
+- Structured finite-reserve, innate-woodland, and local-water sector state, with no deposit entities
+- Player-planted forests as the only separate natural-resource instances
+- Extraction facilities required to turn sector reserves or woodland into inventory goods
 - Company-wide material inventory
+- No warehouse or facility material inventories
 - No road or freight simulation
 - Sector water balance
 - Cables represented as graph edges rather than tile-by-tile routes

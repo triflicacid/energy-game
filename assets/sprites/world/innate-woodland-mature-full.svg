@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+  <!-- innate-woodland-mature-full -->
+  <rect x="2" y="11" width="2" height="3" fill="#5a3212"/>
+  <rect x="1" y="5" width="3" height="1" fill="#1e4820"/>
+  <rect x="0" y="6" width="5" height="6" fill="#1e4820"/>
+  <rect x="1" y="7" width="3" height="3" fill="#2a6828"/>
+  <rect x="2" y="6" width="1" height="2" fill="#3a8838"/>
+  <rect x="7" y="11" width="2" height="3" fill="#5a3212"/>
+  <rect x="6" y="2" width="4" height="1" fill="#1e4820"/>
+  <rect x="5" y="3" width="6" height="9" fill="#1e4820"/>
+  <rect x="6" y="4" width="4" height="5" fill="#2a6828"/>
+  <rect x="8" y="3" width="1" height="3" fill="#3a8838"/>
+  <rect x="13" y="11" width="2" height="3" fill="#5a3212"/>
+  <rect x="12" y="4" width="3" height="1" fill="#1e4820"/>
+  <rect x="11" y="5" width="5" height="7" fill="#1e4820"/>
+  <rect x="12" y="6" width="3" height="4" fill="#2a6828"/>
+  <rect x="13" y="5" width="1" height="2" fill="#3a8838"/>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+  <!-- planted-forest-freshly-planted -->
+  <rect x="1" y="12" width="1" height="2" fill="#5a3212"/>
+  <rect x="0" y="11" width="3" height="2" fill="#2a6828"/>
+  <rect x="1" y="11" width="1" height="1" fill="#3a8838"/>
+  <rect x="5" y="12" width="1" height="2" fill="#5a3212"/>
+  <rect x="4" y="11" width="3" height="2" fill="#2a6828"/>
+  <rect x="5" y="11" width="1" height="1" fill="#3a8838"/>
+  <rect x="9" y="12" width="1" height="2" fill="#5a3212"/>
+  <rect x="8" y="11" width="3" height="2" fill="#2a6828"/>
+  <rect x="9" y="11" width="1" height="1" fill="#3a8838"/>
+  <rect x="13" y="12" width="1" height="2" fill="#5a3212"/>
+  <rect x="12" y="11" width="3" height="2" fill="#2a6828"/>
+  <rect x="13" y="11" width="1" height="1" fill="#3a8838"/>
+</svg>

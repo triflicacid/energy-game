@@ -16,7 +16,7 @@ The central question is:
 2. **Technological progression** — begin with timber and mechanical power, then discover metals, electricity, industrial generation, renewables, nuclear technology, hydrogen, and fusion.
 3. **Distinct generation technologies** — plants differ through availability, dispatchability, fuel, water use, ramping, reliability, lifetime, and environmental effects rather than only price and output.
 4. **Seasonal planning** — weather, renewable output, water inflow, forestry growth, and town demand change predictably through the year.
-5. **Finite resources and circularity** — deposits decline; decommissioning creates recoverable scrap; recycling reduces but never eliminates extraction.
+5. **Finite resources and circularity** — finite sector reserves decline through extraction; decommissioning creates recoverable scrap; recycling reduces fresh extraction but never replenishes natural reserves.
 6. **Spatial grid strategy** — sectors contain sites and zero or more towns; electricity earns money only after it reaches customers through adequate grid infrastructure.
 7. **Data-driven content** — resource types, recipes, facilities, upgrades, research nodes, sector/town archetypes, seasons, and contracts are defined as validated data connected by stable IDs. Catalog content must not be hard-coded into simulation or UI logic.
 8. **Controlled scope** — no individual citizens, street layouts, vehicle routing, realistic terrain generation, or complete world economy.
@@ -24,10 +24,10 @@ The central question is:
 
 ## Core progression
 
-1. Harvest and regrow timber.
+1. Manage viable innate woodland and establish separately tracked planted forests.
 2. Build waterwheels and windmills that produce local mechanical power.
 3. Use mechanical workshops and milestones to gain research.
-4. Unlock charcoal, prospecting, iron, and copper.
+4. Unlock charcoal, sector-reserve surveying, iron, and copper extraction.
 5. Manufacture a dynamo and generate the first electricity.
 6. Connect a nearby town and earn money through delivered-energy contracts.
 7. Unlock steel, concrete, transmission, thermal plants, modern hydro, wind, and solar.
@@ -46,7 +46,7 @@ At each simulation interval:
 5. Flow electricity through capacity-limited grid connections and apply losses.
 6. Settle delivered energy, shortages, curtailment, contract payments, and penalties.
 7. Run extraction, factories, research, construction, maintenance, forestry, and recycling.
-8. Update inventories, deposit reserves, plant condition, town growth, and forecasts.
+8. Update the global inventory, sector reserves, woodland, water, plant condition, town growth, and forecasts.
 
 ## Deliberate abstractions
 
@@ -54,8 +54,12 @@ At each simulation interval:
 - Towns expose demand and contract information but manage their internal buildings automatically.
 - Existing towns may be generated, and the player may found new towns; founding changes demand geography without introducing street or citizen management.
 - Major industrial loads may be explicit; ordinary commerce and industry remain aggregated.
-- Materials initially use a company-wide inventory. Inter-sector freight may later add automatic cost and delay, but the player does not route trucks or trains.
-- Reservoirs and hydro opportunities are sector sites and water balances, not generated lakes or rivers.
+- All extracted, harvested, processed, imported, decommissioned, and recycled goods use one company-wide inventory. There are no sector, warehouse, extractor, or general facility inventories in the current scope. Inter-sector freight may later add automatic cost and delay, but the player does not route trucks or trains.
+- Finite reserves, innate woodland, and water are structured sector state rather than spawned natural-resource entities. Player-planted forests are the only separate natural-resource instances.
+- Viable innate woodland can grow, but complete depletion removes it and does not spontaneously restore it. Planted forests use freshly planted, growing, mature/full, semi-harvested/sparse, and nearly-empty visuals and disappear when depleted.
+- Reservoirs and hydro opportunities are sector sites and water balances, not generated lakes or rivers. Reservoirs improve rainy-season capture, retention, usable storage, and withdrawal capacity; they neither create water nor fill instantly.
+- Recycling returns recovered goods to company inventory and never replenishes geological reserves, woodland biomass, or sector water.
+- Every inventory resource has a stable icon reference.
 - World art is layered: an opaque biome tile forms the normal background, while reservoirs, forests, towns, and facilities are transparent overlays. Construction opportunities are semantic data shown as faint outlines only while construction mode is active, not persistent placeholder sprites.
 - Minor hand tools and incidental early building materials are part of the starting abstraction.
 - Imports provide an expensive safety valve so a campaign cannot become permanently deadlocked.
@@ -84,7 +88,7 @@ These should be resolved through prototypes rather than fixed prematurely:
 - Region count and construction-site limits
 - Degree of automatic generator dispatch
 - Whether mechanical power uses adjacency or named site-local networks
-- When to move from global to regional material inventories
+- Whether a post-MVP logistics expansion justifies replacing the settled global inventory with regional inventories
 - How strongly money, materials, research, and construction time constrain expansion
 - Exact environmental, maintenance, labor, and reputation systems
 

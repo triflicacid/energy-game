@@ -58,7 +58,7 @@ This connects discovery to player action.
 
 Starting capability:
 
-- Forestry and replanting
+- Forestry of viable innate woodland and planting of separately tracked forests
 - Carpentry and timber structures
 - Wooden gears, shafts, and belts
 - Waterwheels and windmills
@@ -102,6 +102,8 @@ Key unlocks:
 - Early thermal generation
 - Transformers and improved distribution
 - Mechanical pumps and larger reservoirs
+
+Reservoir research improves wet-season capture, retention/effective recharge, usable storage, and withdrawal capacity. It never grants water or instantly fills new capacity.
 
 ### Era 3: regional grids
 
@@ -179,7 +181,7 @@ Biome branches split exploration from construction, for example:
 Equivalent data-defined branches may cover wetland, mountain, volcanic, coastal, and offshore environments.
 
 - **Exploration research** permits entering/revealing sectors with the biome tag.
-- **Survey research** improves deposit and site estimates where specialized equipment is justified.
+- **Survey research** improves sector reserve/endowment and site estimates where specialized equipment is justified.
 - **Construction research** permits ordinary facilities and grid infrastructure in that biome.
 - **Advanced adaptation** improves construction cost, reliability, maintenance, or plant performance there.
 
@@ -189,13 +191,15 @@ General explorer range and biome permissions are cumulative prerequisites. A dis
 
 `forestry → replanting/rotation → charcoal → wood steam → biomass/biogas → gasification/carbon capture`
 
+Sustainable forestry improves management of viable innate sector woodland. Replanting/plantation research unlocks player-planted forest instances with their own growth and harvest lifecycle; it does not automatically revive terminally depleted innate woodland.
+
 ### Mechanical engineering
 
 `carpentry → gearing/shafts → improved wheels/mills → pumps → steam machinery → turbines`
 
 ### Materials
 
-`prospecting → quarry/iron/copper → smelting → steel/concrete/glass → electronics → advanced alloys/recycling`
+`prospecting → sector-reserve survey → quarry/mine extraction facilities → smelting → steel/concrete/glass → electronics → advanced alloys/recycling`
 
 ### Grid
 
@@ -203,7 +207,7 @@ General explorer range and biome permissions are cumulative prerequisites. A dis
 
 ### Water
 
-`waterwheel → reinforced wheel → hydro turbine → small/reservoir hydro → pumped storage`
+`waterwheel → reinforced wheel → capture/retention upgrades → hydro turbine → small/reservoir hydro → pumped storage`
 
 ### Wind
 
@@ -262,6 +266,10 @@ At data-load or build time, detect:
 - Research facilities that require their own unlock
 - Invalid graph/UI positions
 - Nodes with no effect
+- Extraction unlocks without a compatible facility for the targeted sector reserve
+- Planting unlocks without a planted-forest definition and complete lifecycle visual mapping
+- Unlocks or upgrades that claim to replenish finite natural reserves
+- Reservoir unlocks or upgrades that grant water directly rather than capture, retention, storage, or withdrawal capability
 
 Generate a development report containing the complete unlock order, resource dependencies, unreachable content, and estimated research costs.
 

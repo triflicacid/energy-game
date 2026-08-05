@@ -28,7 +28,7 @@ A town exposes:
 | --- | --- | --- |
 | Rural village | Small residential and agricultural load | Heating and harvest peaks |
 | Farming town | Pumps, refrigeration, and processing | Irrigation and harvest dependent |
-| Mining town | Steady mine and worker load | May decline after deposit closure |
+| Mining town | Steady mine and worker load | May decline after local sector-reserve exhaustion and mine closure |
 | Industrial town | Large, stable industrial load | High reliability requirement |
 | Tourist town | Hotels and commerce | Summer or winter visitor peak |
 | Port city | Logistics, refrigeration, and industry | Enables imports; relatively stable |

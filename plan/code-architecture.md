@@ -70,7 +70,7 @@ src/
   application/       Startup, lifecycle, and application-facing operations
   content/           Loading, validating, and indexing data definitions
   simulation/        Runtime state and deterministic game systems
-  generation/        Seeded sector, town, site, deposit, and weather generation
+  generation/        Seeded sector reserve, woodland, water, town, site, planted-forest, and weather generation
   rendering/         Canvas map, camera, spatial hit testing, and visual effects
   ui/                HTML/CSS panels, dialogs, tooltips, and research display
   persistence/       Save encoding, loading, versioning, and migrations
@@ -133,8 +133,9 @@ Events describe facts that have occurred, for example:
 - Facility construction completed
 - Facility output or condition changed materially
 - Contract accepted, fulfilled, breached, or expired
-- Deposit entered decline or was exhausted
-- Reservoir crossed a warning threshold
+- Sector reserve entered decline or was exhausted, identified by sector and resource IDs
+- Innate woodland became nonviable or was depleted
+- Reservoir crossed a capture, fill, spill, or withdrawal warning threshold
 - Town was founded or demand changed
 - Inventory or money changed
 
@@ -183,7 +184,7 @@ Game content lives in JSON or equivalent data files grouped by concern, includin
 - Resource and waste types
 - Recipes
 - Facility and generator types
-- Extraction and storage types
+- Extraction-facility and energy-storage types
 - Upgrades and retrofits
 - Research nodes
 - Sector, site, climate, and town archetypes
@@ -192,6 +193,8 @@ Game content lives in JSON or equivalent data files grouped by concern, includin
 - Seasonal and weather profiles
 
 Definitions use stable string IDs for references.
+
+Finite reserves are generated structured sector state, not content-defined entities. Inventory resource definitions include mandatory icon references resolved at the presentation boundary.
 
 ### Loading stages
 
@@ -234,7 +237,7 @@ Simulation time must be independent of rendering frame rate.
 A fixed game interval, likely representing an in-game hour initially, advances:
 
 - Seasons and weather
-- Water and forest growth
+- Sector-local water balance, innate woodland growth/viability, and planted-forest growth
 - Town demand
 - Generation and storage
 - Grid delivery
@@ -252,12 +255,13 @@ Runtime campaign state should be serializable and contain IDs plus changing valu
 Broad state areas include:
 
 - Clock and weather
-- Sectors, sites, and deposits
+- Sectors, placement sites, and structured reserve/endowment records
+- Player-planted forest instances
 - Towns and contracts
 - Facility instances
 - Electrical and mechanical networks
-- Resource inventories and waste
-- Water and forestry stocks
+- One company-wide material inventory containing ordinary goods and waste
+- Sector-local water and innate woodland state
 - Research and unlock progress
 - Construction and maintenance work
 - Money and performance history
@@ -269,7 +273,8 @@ Simulation behavior should be divided by responsibility rather than concentrated
 - Seasonal/weather progression
 - Demand calculation
 - Resource extraction and production
-- Forestry and water
+- Forestry that distinguishes innate sector woodland from planted-forest instances
+- Sector water capture, retention, spill, and withdrawal through reservoir facilities
 - Plant availability and generation
 - Storage and electrical delivery
 - Contract settlement and economy
@@ -278,6 +283,8 @@ Simulation behavior should be divided by responsibility rather than concentrated
 - Town founding and growth
 
 The exact class/function decomposition should follow implementation experience. The important constraint is that each area has explicit inputs, outputs, and tests.
+
+Extraction systems consume sector reserve state only through compatible operational facilities and put output into the company-wide inventory. Forestry facilities similarly harvest either sector woodland or a selected planted-forest instance. Processing and recycling consume and produce company inventory goods; recycling must never mutate finite reserves, woodland biomass, or sector water. The current scope has no general sector, warehouse, extractor, or facility material inventories.
 
 ### Determinism
 
@@ -305,11 +312,13 @@ Responsibilities:
 - Assign climate and renewable profiles
 - Generate zero or more towns per sector
 - Include deliberately empty sectors and occasional multi-town sectors
-- Place typed sites and deposits
+- Generate structured finite-reserve, innate-woodland, and local-water sector records
+- Place typed facility sites independently of natural-resource state
+- Create optional player-planted forests as the only separate natural-resource instances
 - Create initial connections and import access
 - Validate that the generated campaign has a viable progression path
 
-Generation output is semantic game data. It must not contain canvas coordinates or sprite IDs beyond optional presentation hints.
+Generation must not create deposit entities or deposit runtime IDs. Generation output is semantic game data. It must not contain canvas coordinates or sprite IDs beyond optional presentation hints.
 
 The visual map layout can be generated separately from gameplay content so presentation changes do not alter campaign rules.
 
@@ -318,7 +327,7 @@ The visual map layout can be generated separately from gameplay content so prese
 The canvas renders the spatial game world:
 
 - Opaque biome backgrounds for visible cells
-- Transparent reservoir, resource, town, and facility overlays
+- Transparent reservoir, sector-resource, planted-forest, town, and facility overlays
 - Sector shapes and borders
 - Towns and physical resources
 - Facilities and construction
@@ -331,7 +340,7 @@ Rendering reads state but does not advance the simulation or modify it.
 
 The canonical back-to-front order is biome background, ground-level overlays such as reservoir water, persistent resources/entities, facilities, and transient interaction graphics. Object sprites must not repaint the full biome tile. The built waterwheel may retain its local river/bank foreground because that scenery is part of the facility composition.
 
-Site tags and placement opportunities remain semantic state. Generic and waterwheel sites have no persistent placeholder art: when construction mode is active, placement rules produce eligible cells or footprints and the renderer draws a faint outline over them. Standing forest remains visible because it is a physical resource, not merely a placement tag. See `plan/sprites-and-atlases.md` for the complete layer and atlas contract.
+Site tags and placement opportunities remain semantic state. Generic and waterwheel sites have no persistent placeholder art: when construction mode is active, placement rules produce eligible cells or footprints and the renderer draws a faint outline over them. Innate woodland visuals are projected from sector state; planted woodland visuals are projected from planted-forest instances; both disappear at terminal depletion. See `plan/sprites-and-atlases.md` for the complete layer and atlas contract.
 
 Spatial selection and camera movement may live near rendering because they depend on screen/world coordinates. A selected object is then exposed to the application/UI layer by stable runtime ID.
 
@@ -341,13 +350,15 @@ Static or expensive visual layers may use offscreen caches. Cache invalidation s
 
 HTML and CSS should provide:
 
-- Status and resource displays
+- One global inventory display with a resolved icon for every resource row
 - Build and upgrade panels
 - Facility, town, sector, and contract details
 - Research progression
 - Forecasts and historical charts
 - Settings, help, confirmations, and debug tools
 - Tooltips and notifications
+
+Extractor details show their selected sector reserve or woodland source and its known runway. Reservoir details show current accounted water, capture, retention, spill, and withdrawal constraints. The current UI has no warehouse or sector-inventory panels.
 
 The canvas remains visible beneath or beside these elements.
 
@@ -467,7 +478,11 @@ Circular dependencies between these areas should be treated as an architectural 
 - Seasonal curves and demand
 - Generation, storage, and grid capacity
 - Contract settlement
-- Deposit depletion and forest regrowth
+- Finite sector-reserve depletion without negative quantities or extraction beyond reserve
+- Innate woodland viability, terminal depletion/disappearance, and planted-forest lifecycle
+- Reservoir no-creation, no-instant-fill, capture, retention, spill, and withdrawal behavior
+- Recycling that changes company inventory without replenishing natural state
+- Single-global-inventory invariants
 - Upgrade/decommission/recycling bounds
 - Event payload typing, delivery, queue ordering, unsubscription, re-entrant publication, and listener-failure policy
 
@@ -502,9 +517,9 @@ Prefer explicit development tools over generic mutable state access:
 - Change season/weather
 - Grant money or a resource
 - Complete research
-- Reveal deposits
-- Damage, repair, or deplete a facility/deposit
-- Refill or empty a reservoir
+- Reveal or revise a sector/resource reserve estimate
+- Damage, repair, or deplete a facility, sector reserve, innate woodland, or planted forest
+- Apply an explicit debug-only accounted water change to a reservoir
 - Inspect demand, dispatch, grid, and contract calculations
 - Validate/reload content
 - Export a reproducible state snapshot

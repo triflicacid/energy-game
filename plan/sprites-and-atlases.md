@@ -32,7 +32,7 @@ World visuals use layers rather than self-contained scene images:
 - Physical objects are transparent overlays. Forests, towns, reservoirs, and facilities must leave the biome visible wherever they do not paint the object itself.
 - An overlay may include local scenery that is integral to its subject. In particular, the built waterwheel retains its river and bank along the bottom of the sprite; it does not repaint the whole biome background.
 - Semantic site suitability is gameplay data, not a visible object. `general-site` and `waterwheel-site` do not have placeholder sprites. A waterwheel is drawn only after a waterwheel facility exists.
-- A forest is different from an invisible build opportunity: standing forest is a physical resource and therefore remains visible as the `forest-site` overlay.
+- A forest is different from an invisible build opportunity. Innate woodland is projected from sector state rather than a site or entity; planted woodland is projected from its separate instance state. Both remain visible until terminal depletion and then disappear.
 
 ### Canonical world draw order
 
@@ -40,11 +40,11 @@ Draw a cell from back to front:
 
 1. Opaque biome background.
 2. Ground-level overlays, including connected reservoir water.
-3. Persistent resources and entities, including forests and towns.
+3. Persistent sector-resource visuals and entities, including woodland and towns.
 4. Constructed facilities and their physical construction/operation effects.
 5. Transient interaction graphics: construction suitability, placement footprint, selection, warnings, and other UI effects.
 
-The renderer must not choose gameplay state from sprite transparency or draw order. The simulation supplies biome, entities, facilities, topology, and placement eligibility; rendering only presents that state.
+The renderer must not choose gameplay state from sprite transparency or draw order. The simulation supplies biome, sector woodland state, planted-forest instances, entities, facilities, topology, and placement eligibility; rendering only presents that state.
 
 ### Construction mode
 
@@ -101,6 +101,8 @@ Possible groups:
 - Animated effects
 - UI icons, if CSS/individual SVG use is not more appropriate
 
+Inventory resource icons form a required presentation catalog even if they remain individual SVGs rather than joining the world atlas. Every inventory resource definition must resolve a stable icon ID; missing icon references are content-validation errors.
+
 Reasons to split atlases include:
 
 - Browser/GPU texture-size limits
@@ -155,8 +157,9 @@ The world manifest uses explicit `atlasRow` categories so generated sheets are e
 
 0. Biome backgrounds
 1. Reservoir-water autotiles
-2. Forest and town/entity overlays
+2. Town/entity overlays and the temporary legacy `forest-site` visual
 3. Constructed facilities
+4. Innate-woodland and planted-forest lifecycle visuals
 
 Every sprite in a manifest that opts into explicit rows must declare a row. A category must fit on one atlas shelf; generation should fail clearly rather than silently split that category. Runtime code still resolves sprites by ID through the generated descriptor and must not rely on these row numbers.
 
@@ -274,6 +277,20 @@ Reservoir water uses 16 transparent cardinal-neighbour variants named `reservoir
 The set covers the isolated rounded pond, four endpoints, two straights, four corners, four T-junctions, and the fully connected tile. A connection is present only when the adjacent cardinal cell belongs to the same reservoir visual join group. Diagonal-only contact does not join, and different reservoirs do not join merely because their cells touch.
 
 These pieces are a presentation overlay drawn over the biome and below dams, powerhouses, and other facility sprites. Their visual cell count and shape do not determine reservoir capacity, facility footprint, water balance, or simulation connectivity.
+
+### Natural-resource visual states
+
+Innate woodland uses sector biomass and viability to select a deterministic visual state. It requires mature/full, semi-harvested/sparse, and nearly-empty visuals; terminally depleted woodland has no sprite.
+
+Player-planted forest instances require these lifecycle visuals:
+
+- Freshly planted
+- Growing
+- Mature/full
+- Semi-harvested/sparse
+- Nearly empty
+
+A depleted planted forest has no sprite and is removed. Innate and planted woodland may share artwork for equivalent states where appropriate, but their semantic visual-state IDs remain distinct. Sprite selection is presentation-only: simulation biomass must never be inferred from the selected frame.
 
 ## Building states and upgrades
 
@@ -406,6 +423,8 @@ Automated tests should cover:
 - Modular network-piece selection
 - Explicit atlas-row grouping and oversized-row diagnostics
 - Missing visual-reference diagnostics
+- Inventory-icon resolution for every inventory resource
+- Deterministic innate-woodland and planted-forest visual-state selection
 
 Visual tests should include:
 
@@ -418,6 +437,10 @@ Visual tests should include:
 - Reservoir edge joins for all 16 cardinal masks
 - Placement and selection highlight alignment
 - No placeholder art for invisible site suitability
+- Innate woodland transitions through full, sparse, and nearly-empty visuals and disappears at terminal depletion
+- Planted forest transitions through freshly planted, growing, full, sparse, and nearly-empty visuals and disappears when depleted
+- Sector woodland and planted-forest instances project independently
+- Every inventory row resolves the correct resource icon, with a clear missing-icon development diagnostic
 - Adjacent atlas sprites at multiple zoom levels to detect bleeding
 
 ## Initial implementation scope
@@ -425,7 +448,10 @@ Visual tests should include:
 For the first visual slice, implement only:
 
 - One generated world atlas page
-- Opaque biome backgrounds and transparent source overlays for forest/forestry, waterwheel, workshop, and town tiers
+- Opaque biome backgrounds and transparent source overlays for innate woodland, the full planted-forest lifecycle, waterwheel, workshop, and town tiers
+- Mature/full, semi-harvested/sparse, and nearly-empty innate-woodland visuals, with no depleted visual
+- Freshly planted, growing, mature/full, semi-harvested/sparse, and nearly-empty planted-forest visuals, with no depleted visual
+- Inventory icons for timber, wood waste, and every other inventory resource included in the slice
 - Sixteen cardinal reservoir-water autotiles
 - Deterministic atlas generator
 - Generated TypeScript descriptor

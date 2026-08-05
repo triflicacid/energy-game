@@ -39,6 +39,8 @@ Prefer separate JSON documents or logical catalogs:
 
 A build step may combine these into a production bundle after validation.
 
+`extractors` describe extraction-facility capabilities, not deposit entities. Sector archetype and generation data define finite reserve/endowment ranges, innate woodland, and local water. Planted-forest definitions provide the only separately instantiated natural-resource lifecycle. Resource definitions own required inventory icon references.
+
 Simulation and UI code must operate on capabilities, tags, typed definitions, and registered behavior IDs. It must not contain branches such as “if building is coal plant” or manually maintained lists of resource/research IDs. Adding an ordinary resource, recipe, research node, upgrade, town archetype, or plant variant should normally require data and assets only.
 
 ## Definition versus runtime state
@@ -64,12 +66,14 @@ Save-specific values such as:
 - Construction progress
 - Condition and age
 - Current output and dispatch mode
-- Stored fuel/water/energy
+- Narrowly scoped operational fuel, water, or energy buffers where explicitly required
 - Installed upgrades
 - Maintenance schedule
 - Original/current material composition
 
 Never mutate shared definitions to represent one facility instance.
+
+Sector reserves, innate woodland, and sector water are runtime sector state. Player-planted forests are separate runtime instances; finite deposits are not entities. The current scope has one company-wide material inventory and no sector, warehouse, extractor, or general facility inventories.
 
 ## Resource definitions
 
@@ -77,7 +81,8 @@ A resource needs:
 
 - Stable ID
 - Category and unit
-- Display precision/icon/localization
+- Display precision and localization
+- Mandatory icon ID for every resource held in the company-wide inventory
 - Whether it is storable, importable, renewable, waste, or hazardous
 - Optional density/value/emissions metadata
 - Valid substitutions where explicitly supported
@@ -106,12 +111,14 @@ Common fields:
 - Valid site/sector requirements
 - Construction bill, money, and time
 - Required research
-- Input/output storage
+- Global-inventory input/output resource references
 - Recipe/capability IDs
 - Mechanical/electrical/heat connections
 - Maintenance, lifetime, condition, and decommission profile
 - Upgrade IDs
 - Registered behavior ID
+
+Extractor definitions additionally specify compatible sector reserve, woodland, or water source types and tags, extraction or withdrawal capacity, resource costs, and source requirements. A narrowly typed operational buffer is permitted only when gameplay requires it and must not become general material storage.
 
 Generator-specific data adds capacity, auxiliary load, ramping, minimum stable output, start time/cost, fuel/water/emission rates, and availability response.
 
@@ -133,6 +140,8 @@ Complex behavior is implemented in TypeScript and referenced by a closed identif
 - `materialProcessor`
 
 Every behavior validates the fields it requires. This keeps data flexible without turning it into an unsafe scripting language.
+
+`fuelExtractor` and related extraction behaviors read finite sector reserve records. Forestry behavior distinguishes innate sector woodland from planted-forest instances. Reservoir behavior modifies capture, retention/effective recharge, usable storage, and withdrawal limits and never adds water directly.
 
 ## Research definitions
 
@@ -170,7 +179,9 @@ A sector instance references:
 - Sector archetype
 - Biome archetype
 - Climate profile
-- Site/deposit instances
+- Placement-site instances and structured sector reserve/endowment records
+- Innate woodland and sector-local water state
+- References to separately instantiated player-planted forests
 - Neighbors and connection distance
 - Centre distance and current access state
 - Exploration, survey, acquisition, and construction status
@@ -239,6 +250,14 @@ Detect:
 - Biomes with missing exploration/construction research references
 - Sectors that can be explored or built in without satisfying their configured permissions
 - Invalid, negative, or nonfinite acquisition-price modifiers
+- Natural-resource deposit entity or deposit-ID definitions
+- Missing or unresolved inventory resource icons
+- Extractable sector reserve types with no compatible facility
+- Extractors targeting incompatible sector resources
+- General warehouse/facility material inventories in current-scope content
+- Recycling outputs that target finite reserves, woodland biomass, or sector water instead of company inventory
+- Reservoir definitions that create water, fill without accounted inflow, or describe direct regeneration without inflow
+- Missing or invalid planted-forest lifecycle visual mappings
 
 ## Generated reports
 
@@ -247,6 +266,9 @@ Development tooling should produce:
 - Research topological order
 - Complete unlock list per era
 - Resource producer/consumer graph
+- Sector-reserve-to-extractor coverage
+- Inventory-icon coverage
+- Global-inventory producer/consumer graph distinguishing extraction, imports, processing, and recovery
 - Recipe mass/input-output report
 - Facility construction and operating comparison
 - Upgrade applicability matrix
@@ -272,6 +294,11 @@ Automated tests should cover:
 - Mass/resource conservation
 - Upgrade exclusions and prerequisites
 - Decommission/recycling recovery bounds
+- Recycled output entering company inventory without changing sector reserves, woodland, or water
+- Single-global-inventory invariants and absence of general facility/warehouse inventories
+- Sector reserve exhaustion and extractor compatibility
+- Innate woodland terminal depletion and planted-forest lifecycle mappings
+- Reservoir no-creation and no-instant-fill rules
 - Seasonal curve interpolation
 - Deterministic seeded map/weather generation
 - Campaign-start viability
