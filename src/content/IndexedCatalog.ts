@@ -1,8 +1,11 @@
 // immutable indexed catalog with semantic cross-reference validation
 
+import type { ResourceId } from "@shared/IdCounter";
 import type {
+  BuildingDef,
   ContentBundle,
-  FacilityDef,
+  ExtractorBuildingDef,
+  PlantedForestProfileDef,
   RecipeDef,
   ResearchNodeDef,
   ResourceDef,
@@ -22,6 +25,11 @@ export type SemanticResult =
   | { readonly ok: true; readonly catalog: IndexedCatalog }
   | { readonly ok: false; readonly issues: readonly SemanticIssue[] };
 
+/** narrows a BuildingDef to its extractor variant */
+function isExtractor(b: BuildingDef): b is ExtractorBuildingDef {
+  return b.type === "extractor";
+}
+
 /**
  * immutable content catalogs indexed by stable string ID.
  * simulation code consumes this rather than raw ContentBundle or JSON.
@@ -29,18 +37,20 @@ export type SemanticResult =
 export class IndexedCatalog {
   public readonly resources: ReadonlyMap<string, ResourceDef>;
   public readonly recipes: ReadonlyMap<string, RecipeDef>;
-  public readonly facilities: ReadonlyMap<string, FacilityDef>;
+  public readonly buildings: ReadonlyMap<string, BuildingDef>;
   public readonly upgrades: ReadonlyMap<string, UpgradeDef>;
   public readonly researchNodes: ReadonlyMap<string, ResearchNodeDef>;
   public readonly sectors: ReadonlyMap<string, SectorDef>;
+  public readonly plantedForestProfiles: ReadonlyMap<string, PlantedForestProfileDef>;
 
   public constructor(bundle: ContentBundle) {
     this.resources = new Map(bundle.resources.map((r) => [r.id, r]));
     this.recipes = new Map(bundle.recipes.map((r) => [r.id, r]));
-    this.facilities = new Map(bundle.facilities.map((f) => [f.id, f]));
+    this.buildings = new Map(bundle.buildings.map((b) => [b.id, b]));
     this.upgrades = new Map(bundle.upgrades.map((u) => [u.id, u]));
     this.researchNodes = new Map(bundle.researchNodes.map((n) => [n.id, n]));
     this.sectors = new Map(bundle.sectors.map((s) => [s.id, s]));
+    this.plantedForestProfiles = new Map(bundle.plantedForestProfiles.map((p) => [p.id, p]));
   }
 
   /** returns a resource definition by ID, or undefined if not found */
@@ -53,9 +63,14 @@ export class IndexedCatalog {
     return this.recipes.get(id);
   }
 
-  /** returns a facility definition by ID, or undefined if not found */
-  public getFacility(id: string): FacilityDef | undefined {
-    return this.facilities.get(id);
+  /** returns a building definition by ID, or undefined if not found */
+  public getBuilding(id: string): BuildingDef | undefined {
+    return this.buildings.get(id);
+  }
+
+  /** returns every building definition whose type is "extractor" */
+  public getExtractors(): readonly ExtractorBuildingDef[] {
+    return [...this.buildings.values()].filter(isExtractor);
   }
 
   /** returns an upgrade definition by ID, or undefined if not found */
@@ -72,6 +87,11 @@ export class IndexedCatalog {
   public getSector(id: string): SectorDef | undefined {
     return this.sectors.get(id);
   }
+
+  /** returns a planted-forest lifecycle profile by ID, or undefined if not found */
+  public getPlantedForestProfile(id: string): PlantedForestProfileDef | undefined {
+    return this.plantedForestProfiles.get(id);
+  }
 }
 
 /** checks each catalog for duplicate IDs and pushes an issue for each one found */
@@ -79,10 +99,11 @@ function checkDuplicateIds(bundle: ContentBundle, issues: SemanticIssue[]): void
   const catalogs: [string, readonly { id: string }[]][] = [
     ["resources", bundle.resources],
     ["recipes", bundle.recipes],
-    ["facilities", bundle.facilities],
+    ["buildings", bundle.buildings],
     ["upgrades", bundle.upgrades],
     ["researchNodes", bundle.researchNodes],
     ["sectors", bundle.sectors],
+    ["plantedForestProfiles", bundle.plantedForestProfiles],
   ];
   for (const [name, items] of catalogs) {
     const seen = new Set<string>();
@@ -114,31 +135,38 @@ function checkRecipeRefs(bundle: ContentBundle, issues: SemanticIssue[]): void {
   }
 }
 
-/** checks that all IDs referenced by facilities exist in their respective catalogs */
-function checkFacilityRefs(bundle: ContentBundle, issues: SemanticIssue[]): void {
+/** checks that all IDs referenced by buildings exist in their respective catalogs */
+function checkBuildingRefs(bundle: ContentBundle, issues: SemanticIssue[]): void {
   const resourceIds = new Set(bundle.resources.map((r) => r.id));
   const recipeIds = new Set(bundle.recipes.map((r) => r.id));
   const upgradeIds = new Set(bundle.upgrades.map((u) => u.id));
   const researchIds = new Set(bundle.researchNodes.map((n) => n.id));
-  for (const facility of bundle.facilities) {
-    for (const ref of facility.constructionCost) {
+  for (const building of bundle.buildings) {
+    for (const ref of building.constructionCost) {
       if (!resourceIds.has(ref.resourceId)) {
-        issues.push({ catalog: "facilities", itemId: facility.id, message: `references unknown resource "${ref.resourceId}" in constructionCost` });
+        issues.push({ catalog: "buildings", itemId: building.id, message: `references unknown resource "${ref.resourceId}" in constructionCost` });
       }
     }
-    for (const id of facility.recipeIds) {
+    for (const id of building.recipeIds) {
       if (!recipeIds.has(id)) {
-        issues.push({ catalog: "facilities", itemId: facility.id, message: `references unknown recipe "${id}"` });
+        issues.push({ catalog: "buildings", itemId: building.id, message: `references unknown recipe "${id}"` });
       }
     }
-    for (const id of facility.upgradeIds) {
+    for (const id of building.upgradeIds) {
       if (!upgradeIds.has(id)) {
-        issues.push({ catalog: "facilities", itemId: facility.id, message: `references unknown upgrade "${id}"` });
+        issues.push({ catalog: "buildings", itemId: building.id, message: `references unknown upgrade "${id}"` });
       }
     }
-    for (const id of facility.requiredResearch) {
+    for (const id of building.requiredResearch) {
       if (!researchIds.has(id)) {
-        issues.push({ catalog: "facilities", itemId: facility.id, message: `references unknown research node "${id}"` });
+        issues.push({ catalog: "buildings", itemId: building.id, message: `references unknown research node "${id}"` });
+      }
+    }
+    if (building.type === "extractor" && building.sourceKind === "reserve") {
+      for (const resourceId of building.compatibleResourceIds) {
+        if (!resourceIds.has(resourceId as ResourceId)) {
+          issues.push({ catalog: "buildings", itemId: building.id, message: `references unknown resource "${resourceId}" in compatibleResourceIds` });
+        }
       }
     }
   }
@@ -147,7 +175,7 @@ function checkFacilityRefs(bundle: ContentBundle, issues: SemanticIssue[]): void
 /** checks that all IDs referenced by upgrades exist in their respective catalogs */
 function checkUpgradeRefs(bundle: ContentBundle, issues: SemanticIssue[]): void {
   const resourceIds = new Set(bundle.resources.map((r) => r.id));
-  const facilityIds = new Set(bundle.facilities.map((f) => f.id));
+  const buildingIds = new Set(bundle.buildings.map((b) => b.id));
   const researchIds = new Set(bundle.researchNodes.map((n) => n.id));
   for (const upgrade of bundle.upgrades) {
     for (const ref of upgrade.constructionCost) {
@@ -156,8 +184,8 @@ function checkUpgradeRefs(bundle: ContentBundle, issues: SemanticIssue[]): void 
       }
     }
     for (const id of upgrade.applicableFacilityIds) {
-      if (!facilityIds.has(id)) {
-        issues.push({ catalog: "upgrades", itemId: upgrade.id, message: `references unknown facility "${id}"` });
+      if (!buildingIds.has(id)) {
+        issues.push({ catalog: "upgrades", itemId: upgrade.id, message: `references unknown building "${id}"` });
       }
     }
     for (const id of upgrade.requiredResearch) {
@@ -170,11 +198,11 @@ function checkUpgradeRefs(bundle: ContentBundle, issues: SemanticIssue[]): void 
 
 /**
  * checks that parentIds reference known research nodes and that unlockIds reference
- * a known facility, upgrade, or research node
+ * a known building, upgrade, or research node
  */
 function checkResearchNodeRefs(bundle: ContentBundle, issues: SemanticIssue[]): void {
   const researchIds = new Set(bundle.researchNodes.map((n) => n.id));
-  const facilityIds = new Set(bundle.facilities.map((f) => f.id));
+  const buildingIds = new Set(bundle.buildings.map((b) => b.id));
   const upgradeIds = new Set(bundle.upgrades.map((u) => u.id));
   for (const node of bundle.researchNodes) {
     for (const parentId of node.parentIds) {
@@ -183,7 +211,7 @@ function checkResearchNodeRefs(bundle: ContentBundle, issues: SemanticIssue[]): 
       }
     }
     for (const unlockId of node.unlockIds) {
-      if (!facilityIds.has(unlockId) && !upgradeIds.has(unlockId) && !researchIds.has(unlockId)) {
+      if (!buildingIds.has(unlockId) && !upgradeIds.has(unlockId) && !researchIds.has(unlockId)) {
         issues.push({ catalog: "researchNodes", itemId: node.id, message: `unlocks unknown item "${unlockId}"` });
       }
     }
@@ -275,10 +303,10 @@ function checkResourceProducibility(bundle: ContentBundle, issues: SemanticIssue
   for (const recipe of bundle.recipes) {
     for (const ref of [...recipe.outputs, ...recipe.byproducts]) obtainable.add(ref.resourceId);
   }
-  for (const facility of bundle.facilities) {
-    for (const ref of facility.constructionCost) {
+  for (const building of bundle.buildings) {
+    for (const ref of building.constructionCost) {
       if (!obtainable.has(ref.resourceId)) {
-        issues.push({ catalog: "facilities", itemId: facility.id, message: `requires resource "${ref.resourceId}" which has no production or import path` });
+        issues.push({ catalog: "buildings", itemId: building.id, message: `requires resource "${ref.resourceId}" which has no production or import path` });
       }
     }
   }
@@ -300,7 +328,7 @@ function checkResourceProducibility(bundle: ContentBundle, issues: SemanticIssue
 
 /**
  * uses kahn's topological sort on the research-only unlock graph to detect circular unlock chains.
- * unlockIds that point to facilities or upgrades are ignored — only research-to-research
+ * unlockIds that point to buildings or upgrades are ignored — only research-to-research
  * unlock edges are checked.
  */
 function checkCircularUnlocks(bundle: ContentBundle, issues: SemanticIssue[]): void {
@@ -344,13 +372,13 @@ function checkCircularUnlocks(bundle: ContentBundle, issues: SemanticIssue[]): v
 
 /**
  * checks that every site template tag in every sector definition matches a tag
- * declared in at least one facility's validSiteTags, ensuring each site type
- * has at least one facility that can be built there
+ * declared in at least one building's validSiteTags, ensuring each site type
+ * has at least one building that can be built there
  */
 function checkSectorSiteTagRefs(bundle: ContentBundle, issues: SemanticIssue[]): void {
   const knownTags = new Set<string>();
-  for (const facility of bundle.facilities) {
-    for (const tag of facility.validSiteTags) {
+  for (const building of bundle.buildings) {
+    for (const tag of building.validSiteTags) {
       knownTags.add(tag);
     }
   }
@@ -361,9 +389,34 @@ function checkSectorSiteTagRefs(bundle: ContentBundle, issues: SemanticIssue[]):
           issues.push({
             catalog: "sectors",
             itemId: sector.id,
-            message: `site template "${template.templateId}" uses tag "${tag}" not found in any facility's validSiteTags`,
+            message: `site template "${template.templateId}" uses tag "${tag}" not found in any building's validSiteTags`,
           });
         }
+      }
+    }
+  }
+}
+
+/**
+ * checks that every finite reserve resourceId declared by any sector has at least one
+ * compatible extractor building (type "extractor", sourceKind "reserve") listing it in
+ * compatibleResourceIds — i.e. every extractable reserve type has a compatible facility path.
+ */
+function checkReserveExtractorCoverage(bundle: ContentBundle, issues: SemanticIssue[]): void {
+  const coveredResourceIds = new Set<string>();
+  for (const building of bundle.buildings) {
+    if (building.type === "extractor" && building.sourceKind === "reserve") {
+      for (const resourceId of building.compatibleResourceIds) coveredResourceIds.add(resourceId);
+    }
+  }
+  for (const sector of bundle.sectors) {
+    for (const reserve of sector.reserves) {
+      if (!coveredResourceIds.has(reserve.resourceId)) {
+        issues.push({
+          catalog: "sectors",
+          itemId: sector.id,
+          message: `finite reserve "${reserve.resourceId}" has no compatible extractor building (type "extractor", sourceKind "reserve")`,
+        });
       }
     }
   }
@@ -377,7 +430,7 @@ export function buildIndexedCatalog(bundle: ContentBundle): SemanticResult {
   const issues: SemanticIssue[] = [];
   checkDuplicateIds(bundle, issues);
   checkRecipeRefs(bundle, issues);
-  checkFacilityRefs(bundle, issues);
+  checkBuildingRefs(bundle, issues);
   checkUpgradeRefs(bundle, issues);
   checkResearchNodeRefs(bundle, issues);
   checkResearchCycles(bundle, issues);
@@ -385,7 +438,7 @@ export function buildIndexedCatalog(bundle: ContentBundle): SemanticResult {
   checkResourceProducibility(bundle, issues);
   checkCircularUnlocks(bundle, issues);
   checkSectorSiteTagRefs(bundle, issues);
+  checkReserveExtractorCoverage(bundle, issues);
   if (issues.length > 0) return { ok: false, issues };
   return { ok: true, catalog: new IndexedCatalog(bundle) };
 }
-

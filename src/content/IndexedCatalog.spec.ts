@@ -1,20 +1,48 @@
 import { describe, expect, it } from "vitest";
-import type { BiomeId } from "@shared/IdCounter";
-import type { ContentBundle, ResearchNodeDef, ResourceDef, SectorDef } from "./defs";
+import { makeResourceId, type BiomeId } from "@shared/IdCounter";
+import type { BuildingDef, ContentBundle, ExtractorBuildingDef, ResearchNodeDef, ResourceDef, SectorDef } from "./defs";
 import { loadBundledContent } from "./ContentLoader";
 import { buildIndexedCatalog } from "./IndexedCatalog";
 
 // minimal valid construction helpers
 
 function resource(id: string, importable = true): ResourceDef {
-  return { id, category: "organic", unit: "kg", storable: true, importable, renewable: true, waste: false, hazardous: false };
+  return { id: makeResourceId(id), category: "organic", unit: "kg", storable: true, importable, renewable: true, waste: false, hazardous: false, iconId: `icon-${id}` };
 }
 
 function researchNode(id: string, parentIds: string[] = [], unlockIds: string[] = []): ResearchNodeDef {
   return { id, era: "opening", parentIds, researchCost: 0, unlockIds };
 }
 
-function sector(id: string, tags: string[][] = []): SectorDef {
+function building(id: string, overrides: Partial<BuildingDef> = {}): BuildingDef {
+  return {
+    id,
+    type: "generic",
+    behaviorId: "materialProcessor",
+    validSiteTags: [],
+    constructionCost: [],
+    constructionMoneyBase: 0,
+    constructionTimeHours: 1,
+    requiredResearch: [],
+    recipeIds: [],
+    upgradeIds: [],
+    capabilities: [],
+    ...overrides,
+  } as BuildingDef;
+}
+
+function extractorBuilding(id: string, overrides: Partial<ExtractorBuildingDef> = {}): ExtractorBuildingDef {
+  return {
+    ...building(id, { validSiteTags: ["extraction-site"] }),
+    type: "extractor",
+    sourceKind: "reserve",
+    compatibleResourceIds: [],
+    capacityPerHour: 10,
+    ...overrides,
+  } as ExtractorBuildingDef;
+}
+
+function sector(id: string, tags: string[][] = [], overrides: Partial<SectorDef> = {}): SectorDef {
   return {
     id,
     name: id,
@@ -26,6 +54,10 @@ function sector(id: string, tags: string[][] = []): SectorDef {
     siteTemplates: tags.map((t, i) => ({ templateId: `${id}-site-${i}`, tags: t, x: i, y: 0 })),
     hasTown: false,
     initialAccessState: "buildable",
+    innateWoodland: null,
+    water: null,
+    reserves: [],
+    ...overrides,
   };
 }
 
@@ -33,10 +65,11 @@ function bundle(overrides: Partial<ContentBundle> = {}): ContentBundle {
   return {
     resources: [resource("timber")],
     recipes: [],
-    facilities: [],
+    buildings: [],
     upgrades: [],
     researchNodes: [researchNode("root")],
     sectors: [],
+    plantedForestProfiles: [],
     ...overrides,
   };
 }
@@ -59,13 +92,13 @@ describe("buildIndexedCatalog with opening fixtures", () => {
     expect(result.catalog.getResource("nonexistent")).toBeUndefined();
   });
 
-  it("indexes facilities by ID", () => {
+  it("indexes buildings by ID", () => {
     const load = loadBundledContent();
     if (!load.ok) throw new Error(JSON.stringify(load.issues));
     const result = buildIndexedCatalog(load.bundle);
     if (!result.ok) throw new Error(JSON.stringify(result.issues));
-    expect(result.catalog.getFacility("mechanical-workshop")).toBeDefined();
-    expect(result.catalog.getFacility("waterwheel")).toBeDefined();
+    expect(result.catalog.getBuilding("mechanical-workshop")).toBeDefined();
+    expect(result.catalog.getBuilding("waterwheel")).toBeDefined();
   });
 
   it("indexes research nodes by ID", () => {
@@ -75,6 +108,14 @@ describe("buildIndexedCatalog with opening fixtures", () => {
     if (!result.ok) throw new Error(JSON.stringify(result.issues));
     expect(result.catalog.getResearchNode("basic-forestry")).toBeDefined();
     expect(result.catalog.getResearchNode("basic-prospecting")).toBeDefined();
+  });
+
+  it("indexes planted-forest profiles by ID", () => {
+    const load = loadBundledContent();
+    if (!load.ok) throw new Error(JSON.stringify(load.issues));
+    const result = buildIndexedCatalog(load.bundle);
+    if (!result.ok) throw new Error(JSON.stringify(result.issues));
+    expect(result.catalog.getPlantedForestProfile("standard-planted-forest")).toBeDefined();
   });
 });
 
@@ -109,7 +150,7 @@ describe("cross-reference validation", () => {
       recipes: [{
         id: "bad-recipe",
         inputs: [],
-        outputs: [{ resourceId: "ghost-wood", qty: 1 }],
+        outputs: [{ resourceId: makeResourceId("ghost-wood"), qty: 1 }],
         byproducts: [],
         durationHours: 1,
         mechPowerKW: 0,
@@ -122,44 +163,22 @@ describe("cross-reference validation", () => {
     expect(result.issues.some((i) => i.catalog === "recipes" && i.itemId === "bad-recipe")).toBe(true);
   });
 
-  it("reports a facility referencing an unknown recipe", () => {
+  it("reports a building referencing an unknown recipe", () => {
     const result = buildIndexedCatalog(bundle({
-      facilities: [{
-        id: "workshop",
-        behaviorId: "materialProcessor",
-        validSiteTags: [],
-        constructionCost: [],
-        constructionMoneyBase: 0,
-        constructionTimeHours: 1,
-        requiredResearch: [],
-        recipeIds: ["nonexistent-recipe"],
-        upgradeIds: [],
-        capabilities: [],
-      }],
+      buildings: [building("workshop", { recipeIds: ["nonexistent-recipe"] })],
     }));
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.issues.some((i) => i.catalog === "facilities" && i.itemId === "workshop")).toBe(true);
+    expect(result.issues.some((i) => i.catalog === "buildings" && i.itemId === "workshop")).toBe(true);
   });
 
-  it("reports a facility referencing an unknown required research node", () => {
+  it("reports a building referencing an unknown required research node", () => {
     const result = buildIndexedCatalog(bundle({
-      facilities: [{
-        id: "workshop",
-        behaviorId: "materialProcessor",
-        validSiteTags: [],
-        constructionCost: [],
-        constructionMoneyBase: 0,
-        constructionTimeHours: 1,
-        requiredResearch: ["advanced-materials"],
-        recipeIds: [],
-        upgradeIds: [],
-        capabilities: [],
-      }],
+      buildings: [building("workshop", { requiredResearch: ["advanced-materials"] })],
     }));
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.issues.some((i) => i.catalog === "facilities" && i.itemId === "workshop")).toBe(true);
+    expect(result.issues.some((i) => i.catalog === "buildings" && i.itemId === "workshop")).toBe(true);
   });
 
   it("reports a research node referencing an unknown parent", () => {
@@ -173,28 +192,17 @@ describe("cross-reference validation", () => {
 
   it("reports a research node unlocking an unknown item", () => {
     const result = buildIndexedCatalog(bundle({
-      researchNodes: [researchNode("root", [], ["ghost-facility"])],
+      researchNodes: [researchNode("root", [], ["ghost-building"])],
     }));
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.issues.some((i) => i.catalog === "researchNodes" && i.itemId === "root")).toBe(true);
   });
 
-  it("accepts a research node unlocking a known facility", () => {
+  it("accepts a research node unlocking a known building", () => {
     const result = buildIndexedCatalog(bundle({
-      facilities: [{
-        id: "my-facility",
-        behaviorId: "forestGrowth",
-        validSiteTags: [],
-        constructionCost: [],
-        constructionMoneyBase: 0,
-        constructionTimeHours: 1,
-        requiredResearch: [],
-        recipeIds: [],
-        upgradeIds: [],
-        capabilities: [],
-      }],
-      researchNodes: [researchNode("root", [], ["my-facility"])],
+      buildings: [building("my-building", { behaviorId: "forestGrowth" })],
+      researchNodes: [researchNode("root", [], ["my-building"])],
     }));
     expect(result.ok).toBe(true);
   });
@@ -269,25 +277,14 @@ describe("research reachability", () => {
 });
 
 describe("resource producibility", () => {
-  it("reports a facility requiring a non-importable resource with no recipe output", () => {
+  it("reports a building requiring a non-importable resource with no recipe output", () => {
     const result = buildIndexedCatalog(bundle({
       resources: [resource("timber", false), resource("mystery-ore", false)],
-      facilities: [{
-        id: "ore-smelter",
-        behaviorId: "materialProcessor",
-        validSiteTags: [],
-        constructionCost: [{ resourceId: "mystery-ore", qty: 10 }],
-        constructionMoneyBase: 0,
-        constructionTimeHours: 1,
-        requiredResearch: [],
-        recipeIds: [],
-        upgradeIds: [],
-        capabilities: [],
-      }],
+      buildings: [building("ore-smelter", { constructionCost: [{ resourceId: makeResourceId("mystery-ore"), qty: 10 }] })],
     }));
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.issues.some((i) => i.catalog === "facilities" && i.itemId === "ore-smelter" && i.message.includes("mystery-ore"))).toBe(true);
+    expect(result.issues.some((i) => i.catalog === "buildings" && i.itemId === "ore-smelter" && i.message.includes("mystery-ore"))).toBe(true);
   });
 
   it("accepts a resource that is not importable but is produced by a recipe", () => {
@@ -296,25 +293,14 @@ describe("resource producibility", () => {
       recipes: [{
         id: "chip-timber",
         inputs: [],
-        outputs: [{ resourceId: "wood-chips", qty: 5 }],
+        outputs: [{ resourceId: makeResourceId("wood-chips"), qty: 5 }],
         byproducts: [],
         durationHours: 1,
         mechPowerKW: 0,
         requiredResearch: [],
         requiredCapabilities: [],
       }],
-      facilities: [{
-        id: "chipper",
-        behaviorId: "materialProcessor",
-        validSiteTags: [],
-        constructionCost: [{ resourceId: "wood-chips", qty: 2 }],
-        constructionMoneyBase: 0,
-        constructionTimeHours: 1,
-        requiredResearch: [],
-        recipeIds: ["chip-timber"],
-        upgradeIds: [],
-        capabilities: [],
-      }],
+      buildings: [building("chipper", { constructionCost: [{ resourceId: makeResourceId("wood-chips"), qty: 2 }], recipeIds: ["chip-timber"] })],
     }));
     expect(result.ok).toBe(true);
   });
@@ -337,20 +323,9 @@ describe("circular unlock detection", () => {
     expect(circularIds).toContain("b");
   });
 
-  it("does not flag a node that unlocks only facilities", () => {
+  it("does not flag a node that unlocks only buildings", () => {
     const result = buildIndexedCatalog(bundle({
-      facilities: [{
-        id: "mill",
-        behaviorId: "materialProcessor",
-        validSiteTags: [],
-        constructionCost: [],
-        constructionMoneyBase: 0,
-        constructionTimeHours: 1,
-        requiredResearch: [],
-        recipeIds: [],
-        upgradeIds: [],
-        capabilities: [],
-      }],
+      buildings: [building("mill")],
       researchNodes: [researchNode("root", [], ["mill"])],
     }));
     expect(result.ok).toBe(true);
@@ -383,26 +358,15 @@ describe("aggregated error reporting", () => {
 });
 
 describe("sector site tag validation", () => {
-  it("accepts a sector whose site tags all match a known facility validSiteTag", () => {
+  it("accepts a sector whose site tags all match a known building validSiteTag", () => {
     const result = buildIndexedCatalog(bundle({
-      facilities: [{
-        id: "mill",
-        behaviorId: "forestGrowth",
-        validSiteTags: ["forest"],
-        constructionCost: [],
-        constructionMoneyBase: 0,
-        constructionTimeHours: 1,
-        requiredResearch: [],
-        recipeIds: [],
-        upgradeIds: [],
-        capabilities: [],
-      }],
+      buildings: [building("mill", { behaviorId: "forestGrowth", validSiteTags: ["forest"] })],
       sectors: [sector("centre", [["forest"]])],
     }));
     expect(result.ok).toBe(true);
   });
 
-  it("reports a sector site template using a tag absent from all facility validSiteTags", () => {
+  it("reports a sector site template using a tag absent from all building validSiteTags", () => {
     const result = buildIndexedCatalog(bundle({
       sectors: [sector("centre", [["mystery-tag"]])],
     }));
@@ -441,3 +405,58 @@ describe("sector site tag validation", () => {
   });
 });
 
+describe("extractor buildings", () => {
+  it("getExtractors returns only type:extractor buildings", () => {
+    const result = buildIndexedCatalog(bundle({
+      buildings: [
+        building("mill", { behaviorId: "forestGrowth" }),
+        extractorBuilding("iron-mine", { compatibleResourceIds: ["iron-ore"] }),
+      ],
+      resources: [resource("timber"), resource("iron-ore")],
+      sectors: [sector("centre", [], { reserves: [{ resourceId: "iron-ore", initialQuantity: 100, surveyed: true }] })],
+    }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const extractors = result.catalog.getExtractors();
+    expect(extractors).toHaveLength(1);
+    expect(extractors[0]?.id).toBe("iron-mine");
+  });
+
+  it("reports an extractor referencing an unknown compatible resource", () => {
+    const result = buildIndexedCatalog(bundle({
+      buildings: [extractorBuilding("iron-mine", { compatibleResourceIds: ["ghost-ore"] })],
+    }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "buildings" && i.itemId === "iron-mine" && i.message.includes("ghost-ore"))).toBe(true);
+  });
+});
+
+describe("reserve-to-extractor coverage", () => {
+  it("accepts a sector reserve with a compatible extractor", () => {
+    const result = buildIndexedCatalog(bundle({
+      resources: [resource("timber"), resource("iron-ore")],
+      buildings: [extractorBuilding("iron-mine", { compatibleResourceIds: ["iron-ore"] })],
+      sectors: [sector("centre", [], { reserves: [{ resourceId: "iron-ore", initialQuantity: 500, surveyed: true }] })],
+    }));
+    expect(result.ok).toBe(true);
+  });
+
+  it("reports a sector reserve with no compatible extractor", () => {
+    const result = buildIndexedCatalog(bundle({
+      resources: [resource("timber"), resource("iron-ore")],
+      sectors: [sector("centre", [], { reserves: [{ resourceId: "iron-ore", initialQuantity: 500, surveyed: true }] })],
+    }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "sectors" && i.itemId === "centre" && i.message.includes("iron-ore"))).toBe(true);
+  });
+
+  it("does not require coverage for woodland or water sourceKind extractors", () => {
+    const result = buildIndexedCatalog(bundle({
+      buildings: [extractorBuilding("forestry", { sourceKind: "woodland", compatibleResourceIds: [] })],
+      sectors: [sector("centre")],
+    }));
+    expect(result.ok).toBe(true);
+  });
+});

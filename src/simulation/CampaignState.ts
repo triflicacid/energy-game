@@ -6,7 +6,7 @@ import type { ClockSerialState } from "./SimulationClock";
 import type { HistoryEntry } from "./EventHistory";
 
 /** current format version; increment on breaking state schema changes */
-export const CAMPAIGN_STATE_VERSION = 4;
+export const CAMPAIGN_STATE_VERSION = 5;
 
 /** serialized per-entity id counter values */
 export type IdCounterStates = {
@@ -14,6 +14,7 @@ export type IdCounterStates = {
   readonly towns: number;
   readonly sites: number;
   readonly facilities: number;
+  readonly plantedForests: number;
   readonly contracts: number;
   readonly constructionJobs: number;
 };
@@ -59,11 +60,48 @@ export type PresentationCellSerialState =
   | TownPresentationCellSerialState
   | ReservoirPresentationCellSerialState;
 
+/** runtime remaining-quantity record for one finite sector reserve; addressed by resourceId, no deposit ID */
+export type SectorReserveRuntimeState = {
+  readonly remainingQuantity: number;
+  readonly surveyed: boolean;
+};
+
+/**
+ * runtime natural-resource state owned by a sector: innate woodland biomass, local water stock,
+ * and finite reserves keyed by resourceId. null biomass/water means the sector has none of that
+ * kind, matching its SectorDef. this is structured sector state, not spawned resource entities.
+ */
+export type SectorNaturalState = {
+  readonly innateWoodlandBiomassKg: number | null;
+  readonly waterStockM3: number | null;
+  readonly reserves: Readonly<Record<string, SectorReserveRuntimeState>>;
+};
+
 export type SectorSerialState = {
   readonly id: string;
   readonly definitionId: string;
   readonly accessState: SectorAccessState;
   readonly presentationCells: readonly PresentationCellSerialState[];
+  readonly natural: SectorNaturalState;
+};
+
+/** forest management policy applied to a player-planted forest instance */
+export type PlantedForestManagementPolicy = "selective" | "rotation" | "clear-cut" | "coppice" | "salvage";
+
+/**
+ * serialized player-planted forest instance — the only separate natural-resource instance kind.
+ * planting never replenishes or replaces a sector's innate woodland state.
+ */
+export type PlantedForestSerialState = {
+  readonly id: string;
+  readonly sectorId: string;
+  /** references a PlantedForestProfileDef supplying growth rate and lifecycle-visual thresholds */
+  readonly profileId: string;
+  readonly col: number;
+  readonly row: number;
+  readonly plantedAtTick: number;
+  readonly currentBiomassKg: number;
+  readonly managementPolicy: PlantedForestManagementPolicy;
 };
 
 /** serialized town instance */
@@ -114,6 +152,7 @@ export type CampaignState = {
   sites: Readonly<Record<string, SiteSerialState>>;
   towns: Readonly<Record<string, TownSerialState>>;
   facilities: Readonly<Record<string, FacilitySerialState>>;
+  plantedForests: Readonly<Record<string, PlantedForestSerialState>>;
   contracts: Readonly<Record<string, ContractSerialState>>;
   history: readonly HistoryEntry[];
 };
@@ -140,6 +179,7 @@ export function createCampaignState(opts: CreateCampaignOptions): CampaignState 
       towns: 0,
       sites: 0,
       facilities: 0,
+      plantedForests: 0,
       contracts: 0,
       constructionJobs: 0,
     },
@@ -150,6 +190,7 @@ export function createCampaignState(opts: CreateCampaignOptions): CampaignState 
     sites: {},
     towns: {},
     facilities: {},
+    plantedForests: {},
     contracts: {},
     history: [],
   };

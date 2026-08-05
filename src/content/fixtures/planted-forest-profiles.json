@@ -1,0 +1,10 @@
+[
+  {
+    "id": "standard-planted-forest",
+    "maxBiomassKg": 5000,
+    "growthRateKgPerHour": 2,
+    "nearlyEmptyMaxFraction": 0.15,
+    "semiHarvestedMaxFraction": 0.5,
+    "matureMinFraction": 0.85
+  }
+]

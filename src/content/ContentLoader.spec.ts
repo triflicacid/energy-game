@@ -13,6 +13,7 @@ function validResource(overrides: Record<string, unknown> = {}): Record<string, 
     renewable: true,
     waste: false,
     hazardous: false,
+    iconId: "icon-test-resource",
     ...overrides,
   };
 }
@@ -31,9 +32,10 @@ function validRecipe(overrides: Record<string, unknown> = {}): Record<string, un
   };
 }
 
-function validFacility(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function validBuilding(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: "test-facility",
+    id: "test-building",
+    type: "generic",
     behaviorId: "forestGrowth",
     validSiteTags: ["forest"],
     constructionCost: [{ resourceId: "timber", qty: 10 }],
@@ -47,10 +49,23 @@ function validFacility(overrides: Record<string, unknown> = {}): Record<string, 
   };
 }
 
+function validExtractorBuilding(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return validBuilding({
+    id: "test-mine",
+    type: "extractor",
+    behaviorId: "fuelExtractor",
+    validSiteTags: ["extraction-site"],
+    sourceKind: "reserve",
+    compatibleResourceIds: ["iron-ore"],
+    capacityPerHour: 10,
+    ...overrides,
+  });
+}
+
 function validUpgrade(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: "test-upgrade",
-    applicableFacilityIds: ["test-facility"],
+    applicableFacilityIds: ["test-building"],
     requiredResearch: [],
     exclusionGroup: null,
     constructionCost: [],
@@ -71,14 +86,33 @@ function validResearchNode(overrides: Record<string, unknown> = {}): Record<stri
   };
 }
 
+function validSector(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: "centre",
+    name: "Ashford Valley",
+    biome: "temperate",
+    distanceFromCentre: 0,
+    diameter: 12,
+    gridQ: 0,
+    gridR: 0,
+    siteTemplates: [{ templateId: "s1", tags: ["forest"], x: -3, y: 2 }],
+    hasTown: true,
+    initialAccessState: "buildable",
+    innateWoodland: null,
+    water: null,
+    reserves: [],
+    ...overrides,
+  };
+}
+
 function load(
   resources: unknown[] = [validResource()],
   recipes: unknown[] = [validRecipe()],
-  facilities: unknown[] = [validFacility()],
+  buildings: unknown[] = [validBuilding()],
   upgrades: unknown[] = [],
   researchNodes: unknown[] = [validResearchNode()],
 ) {
-  return new ContentLoader().load({ resources, recipes, facilities, upgrades, researchNodes });
+  return new ContentLoader().load({ resources, recipes, buildings, upgrades, researchNodes });
 }
 
 // --- bundled fixtures ---
@@ -89,37 +123,40 @@ describe("loadBundledContent", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("bundle contains all six catalogs", () => {
+  it("bundle contains all catalogs", () => {
     const result = loadBundledContent();
     if (!result.ok) throw new Error(JSON.stringify(result.issues));
     expect(result.bundle.resources.length).toBeGreaterThan(0);
     expect(result.bundle.recipes.length).toBeGreaterThan(0);
-    expect(result.bundle.facilities.length).toBeGreaterThan(0);
+    expect(result.bundle.buildings.length).toBeGreaterThan(0);
     expect(result.bundle.researchNodes.length).toBeGreaterThan(0);
     expect(result.bundle.sectors.length).toBeGreaterThan(0);
+    expect(result.bundle.plantedForestProfiles.length).toBeGreaterThan(0);
   });
 
-  it("fixture resources include timber and wood-waste", () => {
+  it("fixture resources include timber and wood-waste, each with an iconId", () => {
     const result = loadBundledContent();
     if (!result.ok) throw new Error(JSON.stringify(result.issues));
-    const ids = result.bundle.resources.map((r) => r.id);
-    expect(ids).toContain("timber");
-    expect(ids).toContain("wood-waste");
+    const timber = result.bundle.resources.find((r) => r.id === "timber");
+    const woodWaste = result.bundle.resources.find((r) => r.id === "wood-waste");
+    expect(timber?.iconId).toBe("icon-timber");
+    expect(woodWaste?.iconId).toBe("icon-wood-waste");
   });
 
-  it("fixture facilities include forestry-operation, waterwheel, and mechanical-workshop", () => {
+  it("fixture buildings include forestry-operation, waterwheel, and mechanical-workshop, all type generic", () => {
     const result = loadBundledContent();
     if (!result.ok) throw new Error(JSON.stringify(result.issues));
-    const ids = result.bundle.facilities.map((f) => f.id);
+    const ids = result.bundle.buildings.map((b) => b.id);
     expect(ids).toContain("forestry-operation");
     expect(ids).toContain("waterwheel");
     expect(ids).toContain("mechanical-workshop");
+    expect(result.bundle.buildings.every((b) => b.type === "generic")).toBe(true);
   });
 
   it("mechanical-workshop has the research capability", () => {
     const result = loadBundledContent();
     if (!result.ok) throw new Error(JSON.stringify(result.issues));
-    const workshop = result.bundle.facilities.find((f) => f.id === "mechanical-workshop");
+    const workshop = result.bundle.buildings.find((b) => b.id === "mechanical-workshop");
     expect(workshop?.capabilities).toContain("research");
   });
 
@@ -133,11 +170,18 @@ describe("loadBundledContent", () => {
     expect(ids).toContain("basic-prospecting");
   });
 
-  it("fixture sectors include the centre sector", () => {
+  it("fixture centre sector has medium innate woodland and water, reflecting a valley setting", () => {
     const result = loadBundledContent();
     if (!result.ok) throw new Error(JSON.stringify(result.issues));
-    const ids = result.bundle.sectors.map((s) => s.id);
-    expect(ids).toContain("centre");
+    const centre = result.bundle.sectors.find((s) => s.id === "centre");
+    expect(centre).toBeDefined();
+    expect(centre?.innateWoodland).not.toBeNull();
+    expect(centre?.innateWoodland?.initialBiomassKg).toBeGreaterThan(0);
+    expect(centre?.innateWoodland?.initialBiomassKg).toBeLessThanOrEqual(centre?.innateWoodland?.maxBiomassKg ?? 0);
+    expect(centre?.water).not.toBeNull();
+    expect(centre?.water?.initialStockM3).toBeGreaterThan(0);
+    expect(centre?.water?.initialStockM3).toBeLessThanOrEqual(centre?.water?.maxStockM3 ?? 0);
+    expect(centre?.reserves).toEqual([]);
   });
 
   it("centre sector starts as buildable with distance zero", () => {
@@ -149,6 +193,15 @@ describe("loadBundledContent", () => {
     expect(centre?.diameter).toBeGreaterThan(0);
     expect(centre?.gridQ).toBe(0);
     expect(centre?.gridR).toBe(0);
+  });
+
+  it("fixture planted-forest profile has ascending lifecycle fraction thresholds", () => {
+    const result = loadBundledContent();
+    if (!result.ok) throw new Error(JSON.stringify(result.issues));
+    const profile = result.bundle.plantedForestProfiles.find((p) => p.id === "standard-planted-forest");
+    if (!profile) throw new Error("standard-planted-forest profile missing from bundled fixtures");
+    expect(profile.nearlyEmptyMaxFraction).toBeLessThanOrEqual(profile.semiHarvestedMaxFraction);
+    expect(profile.semiHarvestedMaxFraction).toBeLessThanOrEqual(profile.matureMinFraction);
   });
 });
 
@@ -191,6 +244,21 @@ describe("ContentLoader resource validation", () => {
     if (result.ok) return;
     expect(result.issues.some((i) => i.path === "")).toBe(true);
   });
+
+  it("rejects a missing iconId", () => {
+    const result = load([validResource({ iconId: undefined })]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.path === "iconId")).toBe(true);
+  });
+
+  it("rejects an iconId not prefixed with icon-", () => {
+    const result = load([validResource({ iconId: "timber-icon" })]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    const issue = result.issues.find((i) => i.path === "iconId");
+    expect(issue?.message).toContain("icon-");
+  });
 });
 
 describe("ContentLoader recipe validation", () => {
@@ -198,7 +266,7 @@ describe("ContentLoader recipe validation", () => {
     const result = new ContentLoader().load({
       resources: [validResource()],
       recipes: "bad",
-      facilities: [validFacility()],
+      buildings: [validBuilding()],
       upgrades: [],
       researchNodes: [validResearchNode()],
     });
@@ -241,26 +309,78 @@ describe("ContentLoader recipe validation", () => {
   });
 });
 
-describe("ContentLoader facility validation", () => {
+describe("ContentLoader building validation", () => {
   it("rejects a missing behaviorId", () => {
-    const result = load(undefined, undefined, [validFacility({ behaviorId: undefined })]);
+    const result = load(undefined, undefined, [validBuilding({ behaviorId: undefined })]);
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.issues.some((i) => i.path === "behaviorId")).toBe(true);
   });
 
   it("rejects a non-array validSiteTags", () => {
-    const result = load(undefined, undefined, [validFacility({ validSiteTags: "forest" })]);
+    const result = load(undefined, undefined, [validBuilding({ validSiteTags: "forest" })]);
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.issues.some((i) => i.path === "validSiteTags")).toBe(true);
   });
 
   it("rejects a negative constructionMoneyBase", () => {
-    const result = load(undefined, undefined, [validFacility({ constructionMoneyBase: -10 })]);
+    const result = load(undefined, undefined, [validBuilding({ constructionMoneyBase: -10 })]);
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.issues.some((i) => i.path === "constructionMoneyBase")).toBe(true);
+  });
+
+  it("rejects a missing type", () => {
+    const result = load(undefined, undefined, [validBuilding({ type: undefined })]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.path === "type")).toBe(true);
+  });
+
+  it("rejects an unknown type value", () => {
+    const result = load(undefined, undefined, [validBuilding({ type: "mystery" })]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.path === "type")).toBe(true);
+  });
+
+  it("rejects a per-building inventory field", () => {
+    const result = load(undefined, undefined, [validBuilding({ warehouse: { capacity: 100 } })]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.path === "warehouse")).toBe(true);
+  });
+
+  it("accepts a valid extractor building", () => {
+    const result = load(undefined, undefined, [validExtractorBuilding()]);
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects an extractor with an invalid sourceKind", () => {
+    const result = load(undefined, undefined, [validExtractorBuilding({ sourceKind: "magic" })]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.path === "sourceKind")).toBe(true);
+  });
+
+  it("rejects an extractor with a non-array compatibleResourceIds", () => {
+    const result = load(undefined, undefined, [validExtractorBuilding({ compatibleResourceIds: "iron-ore" })]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.path === "compatibleResourceIds")).toBe(true);
+  });
+
+  it("rejects an extractor with a zero capacityPerHour", () => {
+    const result = load(undefined, undefined, [validExtractorBuilding({ capacityPerHour: 0 })]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.path === "capacityPerHour")).toBe(true);
+  });
+
+  it("accepts an extractor with an empty compatibleResourceIds for a woodland source", () => {
+    const result = load(undefined, undefined, [validExtractorBuilding({ sourceKind: "woodland", compatibleResourceIds: [] })]);
+    expect(result.ok).toBe(true);
   });
 });
 
@@ -332,21 +452,10 @@ describe("ContentLoader sector validation", () => {
     const result = new ContentLoader().load({
       resources: [validResource()],
       recipes: [validRecipe()],
-      facilities: [validFacility()],
+      buildings: [validBuilding()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{
-        id: "centre",
-        name: "Ashford Valley",
-        biome: "temperate",
-        distanceFromCentre: 0,
-        diameter: 12,
-        gridQ: 0,
-        gridR: 0,
-        siteTemplates: [{ templateId: "s1", tags: ["forest"], x: -3, y: 2 }],
-        hasTown: true,
-        initialAccessState: "buildable",
-      }],
+      sectors: [validSector()],
     });
     expect(result.ok).toBe(true);
   });
@@ -355,10 +464,10 @@ describe("ContentLoader sector validation", () => {
     const result = new ContentLoader().load({
       resources: [validResource()],
       recipes: [validRecipe()],
-      facilities: [validFacility()],
+      buildings: [validBuilding()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [], hasTown: false, initialAccessState: "buildable" }],
+      sectors: [{ name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [], hasTown: false, initialAccessState: "buildable", innateWoodland: null, water: null, reserves: [] }],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -369,10 +478,10 @@ describe("ContentLoader sector validation", () => {
     const result = new ContentLoader().load({
       resources: [validResource()],
       recipes: [validRecipe()],
-      facilities: [validFacility()],
+      buildings: [validBuilding()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [], hasTown: false, initialAccessState: "flying" }],
+      sectors: [validSector({ initialAccessState: "flying" })],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -383,10 +492,10 @@ describe("ContentLoader sector validation", () => {
     const result = new ContentLoader().load({
       resources: [validResource()],
       recipes: [validRecipe()],
-      facilities: [validFacility()],
+      buildings: [validBuilding()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: -1, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [], hasTown: false, initialAccessState: "buildable" }],
+      sectors: [validSector({ distanceFromCentre: -1 })],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -397,10 +506,10 @@ describe("ContentLoader sector validation", () => {
     const result = new ContentLoader().load({
       resources: [validResource()],
       recipes: [validRecipe()],
-      facilities: [validFacility()],
+      buildings: [validBuilding()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 0, gridQ: 0, gridR: 0, siteTemplates: [], hasTown: false, initialAccessState: "buildable" }],
+      sectors: [validSector({ diameter: 0 })],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -411,10 +520,10 @@ describe("ContentLoader sector validation", () => {
     const result = new ContentLoader().load({
       resources: [validResource()],
       recipes: [validRecipe()],
-      facilities: [validFacility()],
+      buildings: [validBuilding()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 1.5, gridR: 0, siteTemplates: [], hasTown: false, initialAccessState: "buildable" }],
+      sectors: [validSector({ gridQ: 1.5 })],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -425,10 +534,10 @@ describe("ContentLoader sector validation", () => {
     const result = new ContentLoader().load({
       resources: [validResource()],
       recipes: [validRecipe()],
-      facilities: [validFacility()],
+      buildings: [validBuilding()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 1, diameter: 10, gridQ: -2, gridR: -3, siteTemplates: [], hasTown: false, initialAccessState: "explored" }],
+      sectors: [validSector({ distanceFromCentre: 1, gridQ: -2, gridR: -3, initialAccessState: "explored" })],
     });
     expect(result.ok).toBe(true);
   });
@@ -437,10 +546,10 @@ describe("ContentLoader sector validation", () => {
     const result = new ContentLoader().load({
       resources: [validResource()],
       recipes: [validRecipe()],
-      facilities: [validFacility()],
+      buildings: [validBuilding()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [{ templateId: "t1", tags: "forest", x: 0, y: 0 }], hasTown: false, initialAccessState: "buildable" }],
+      sectors: [validSector({ siteTemplates: [{ templateId: "t1", tags: "forest", x: 0, y: 0 }] })],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -451,10 +560,10 @@ describe("ContentLoader sector validation", () => {
     const result = new ContentLoader().load({
       resources: [validResource()],
       recipes: [validRecipe()],
-      facilities: [validFacility()],
+      buildings: [validBuilding()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [{ templateId: "t1", tags: ["forest"], y: 0 }], hasTown: false, initialAccessState: "buildable" }],
+      sectors: [validSector({ siteTemplates: [{ templateId: "t1", tags: ["forest"], y: 0 }] })],
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -465,12 +574,167 @@ describe("ContentLoader sector validation", () => {
     const result = new ContentLoader().load({
       resources: [validResource()],
       recipes: [validRecipe()],
-      facilities: [validFacility()],
+      buildings: [validBuilding()],
       upgrades: [],
       researchNodes: [validResearchNode()],
-      sectors: [{ id: "x", name: "X", biome: "temperate", distanceFromCentre: 0, diameter: 10, gridQ: 0, gridR: 0, siteTemplates: [{ templateId: "t1", tags: ["forest"], x: -3, y: -2 }], hasTown: false, initialAccessState: "buildable" }],
+      sectors: [validSector({ siteTemplates: [{ templateId: "t1", tags: ["forest"], x: -3, y: -2 }] })],
     });
     expect(result.ok).toBe(true);
   });
+
+  it("rejects a sector missing the innateWoodland field", () => {
+    const raw = validSector();
+    delete (raw as Record<string, unknown>)["innateWoodland"];
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      buildings: [validBuilding()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [raw],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "sectors" && i.path === "innateWoodland")).toBe(true);
+  });
+
+  it("accepts a sector with a fully specified innateWoodland definition", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      buildings: [validBuilding()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [validSector({
+        innateWoodland: { maxBiomassKg: 1000, initialBiomassKg: 500, viabilityThresholdKg: 50, growthRateKgPerHour: 1 },
+      })],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects an innateWoodland whose initialBiomassKg exceeds maxBiomassKg", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      buildings: [validBuilding()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [validSector({
+        innateWoodland: { maxBiomassKg: 100, initialBiomassKg: 500, viabilityThresholdKg: 50, growthRateKgPerHour: 1 },
+      })],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "sectors" && i.path === "innateWoodland.initialBiomassKg")).toBe(true);
+  });
+
+  it("accepts a sector with a fully specified water definition", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      buildings: [validBuilding()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [validSector({
+        water: { maxStockM3: 10000, initialStockM3: 0, baselineInflowM3PerHour: 5 },
+      })],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects a water definition whose initialStockM3 exceeds maxStockM3", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      buildings: [validBuilding()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [validSector({
+        water: { maxStockM3: 100, initialStockM3: 500, baselineInflowM3PerHour: 5 },
+      })],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "sectors" && i.path === "water.initialStockM3")).toBe(true);
+  });
+
+  it("accepts a sector with finite reserve records", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource({ id: "iron-ore" })],
+      recipes: [validRecipe()],
+      buildings: [validExtractorBuilding()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [validSector({ reserves: [{ resourceId: "iron-ore", initialQuantity: 5000, surveyed: false }] })],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects a reserve record with a missing resourceId", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      buildings: [validBuilding()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      sectors: [validSector({ reserves: [{ initialQuantity: 5000, surveyed: false }] })],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "sectors" && i.path === "reserves[0].resourceId")).toBe(true);
+  });
 });
 
+describe("ContentLoader planted-forest profile validation", () => {
+  function validProfile(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+      id: "test-profile",
+      maxBiomassKg: 5000,
+      growthRateKgPerHour: 2,
+      nearlyEmptyMaxFraction: 0.15,
+      semiHarvestedMaxFraction: 0.5,
+      matureMinFraction: 0.85,
+      ...overrides,
+    };
+  }
+
+  it("accepts a valid profile", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      buildings: [validBuilding()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      plantedForestProfiles: [validProfile()],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects thresholds that are out of ascending order", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      buildings: [validBuilding()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      plantedForestProfiles: [validProfile({ nearlyEmptyMaxFraction: 0.9, matureMinFraction: 0.1 })],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.catalog === "plantedForestProfiles")).toBe(true);
+  });
+
+  it("rejects a fraction above 1", () => {
+    const result = new ContentLoader().load({
+      resources: [validResource()],
+      recipes: [validRecipe()],
+      buildings: [validBuilding()],
+      upgrades: [],
+      researchNodes: [validResearchNode()],
+      plantedForestProfiles: [validProfile({ matureMinFraction: 1.5 })],
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.some((i) => i.path === "matureMinFraction")).toBe(true);
+  });
+});

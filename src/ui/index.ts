@@ -8,6 +8,13 @@ import type { Disposable } from "@shared/Disposable";
 import iconPause from "./icon-pause.svg?raw";
 import iconResume from "./icon-resume.svg?raw";
 
+/** returns the first element matching selector under root, or throws if none exists */
+function queryRequired<T extends HTMLElement>(root: ParentNode, selector: string): T {
+  const el = root.querySelector<T>(selector);
+  if (!el) throw new Error(`UiShell: expected an element matching "${selector}"`);
+  return el;
+}
+
 /**
  * minimal UI shell: time controls and a tick display.
  * subscribes to clock events for invalidation; no animation-frame polling.
@@ -18,7 +25,7 @@ export class UiShell implements Disposable {
   private readonly tickDisplay: HTMLElement;
   private readonly fpsDisplay: HTMLElement;
   private readonly pauseBtn: HTMLButtonElement;
-  private readonly speedBtns: Map<SpeedMultiplier, HTMLButtonElement> = new Map();
+  private readonly speedBtns = new Map<SpeedMultiplier, HTMLButtonElement>();
   private readonly keyboard: Keyboard;
   private readonly unsubscribePaused: () => void;
   private readonly unsubscribeResumed: () => void;
@@ -29,9 +36,9 @@ export class UiShell implements Disposable {
     this.container = this.buildControls();
     app.getUiRootEl().appendChild(this.container);
 
-    this.tickDisplay = this.container.querySelector<HTMLElement>("[data-tick-display]")!;
-    this.fpsDisplay = this.container.querySelector<HTMLElement>("[data-fps-display]")!;
-    this.pauseBtn = this.container.querySelector<HTMLButtonElement>("[data-pause-btn]")!;
+    this.tickDisplay = queryRequired<HTMLElement>(this.container, "[data-tick-display]");
+    this.fpsDisplay = queryRequired<HTMLElement>(this.container, "[data-fps-display]");
+    this.pauseBtn = queryRequired<HTMLButtonElement>(this.container, "[data-pause-btn]");
 
     this.unsubscribePaused = app.getEvents().subscribe("clock:paused", () => {
       this.syncPauseButton(true);
