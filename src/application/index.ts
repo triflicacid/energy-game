@@ -12,7 +12,7 @@ import { FrameLoopController } from "@simulation/FrameLoopController";
 import { loadBundledContent } from "@content/ContentLoader";
 import { buildIndexedCatalog, type IndexedCatalog } from "@content/IndexedCatalog";
 import { createCampaignState, type CampaignState, type ReadonlyCampaignState } from "@simulation/CampaignState";
-import { createCentreSector } from "@simulation/CentreSector";
+import initialCentreMapJson from "@simulation/fixtures/initial-centre-map.json";
 
 /** merged event map for the application bus; grows as subsystems are added */
 export type AppEventMap = SimClockEventMap;
@@ -57,7 +57,23 @@ export class Application implements Disposable {
     }
     this.catalog = catalogResult.catalog;
     this.campaignState = createCampaignState({ seed: 1 });
-    createCentreSector(this.campaignState, this.catalog);
+
+    // Fresh-map bootstrap comes directly from user-editable JSON fixture.
+    const initialCentreMap = initialCentreMapJson as {
+      readonly idCounters: { readonly sectors: number; readonly sites: number; readonly towns: number };
+      readonly sectors: Readonly<Record<string, CampaignState["sectors"][string]>>;
+      readonly sites: Readonly<Record<string, CampaignState["sites"][string]>>;
+      readonly towns: Readonly<Record<string, CampaignState["towns"][string]>>;
+    };
+    this.campaignState.sectors = JSON.parse(JSON.stringify(initialCentreMap.sectors));
+    this.campaignState.sites = JSON.parse(JSON.stringify(initialCentreMap.sites));
+    this.campaignState.towns = JSON.parse(JSON.stringify(initialCentreMap.towns));
+    this.campaignState.idCounters = {
+      ...this.campaignState.idCounters,
+      sectors: initialCentreMap.idCounters.sectors,
+      sites: initialCentreMap.idCounters.sites,
+      towns: initialCentreMap.idCounters.towns,
+    };
   }
 
   /** returns the canvas element this application renders into */

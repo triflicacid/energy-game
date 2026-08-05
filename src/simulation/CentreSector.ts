@@ -1,10 +1,10 @@
-// stamps the hand-authored centre sector, its sites, and a starting town into campaign state
+// applies the hand-authored centre-sector fixture into campaign state
 
 import type { IndexedCatalog } from "@content";
-import { IdCounter, makeSectorId, makeSiteId, makeTownId } from "@shared/IdCounter";
 import type { CampaignState } from "./CampaignState";
+import initialCentreMapJson from "./fixtures/initial-centre-map.json";
 
-/** thrown when the centre sector cannot be created due to a missing definition or invalid content */
+/** kept for compatibility with older call sites/tests */
 export class CentreSectorError extends Error {
   public constructor(message: string) {
     super(message);
@@ -13,75 +13,27 @@ export class CentreSectorError extends Error {
 }
 
 /**
- * stamps the hand-authored centre sector, its sites, and a starting town into campaign state.
- * mutates state's sectors, sites, towns, and idCounters fields.
- * @throws CentreSectorError if the "centre" sector definition is absent from the catalog,
- *   or if a site template tag is not declared in any facility's validSiteTags
+ * applies the static centre-sector fixture into campaign state.
+ * the fixture is user-editable JSON and is cloned into state on each fresh map.
+ *
+ * `catalog` remains in the signature for compatibility; it is intentionally unused.
  */
-export function createCentreSector(state: CampaignState, catalog: IndexedCatalog): void {
-  const def = catalog.sectors.get("centre");
-  if (!def) {
-    throw new CentreSectorError('sector definition "centre" not found in catalog');
-  }
-
-  // collect every tag declared across all facility validSiteTags
-  const knownSiteTags = new Set<string>();
-  for (const facility of catalog.facilities.values()) {
-    for (const tag of facility.validSiteTags) {
-      knownSiteTags.add(tag);
-    }
-  }
-
-  // validate all site template tags before mutating state
-  for (const template of def.siteTemplates) {
-    for (const tag of template.tags) {
-      if (!knownSiteTags.has(tag)) {
-        throw new CentreSectorError(
-          `site template "${template.templateId}" uses tag "${tag}" not declared in any facility's validSiteTags`,
-        );
-      }
-    }
-  }
-
-  const sectorCounter = new IdCounter(state.idCounters.sectors);
-  const siteCounter = new IdCounter(state.idCounters.sites);
-  const townCounter = new IdCounter(state.idCounters.towns);
-
-  const sectorId = makeSectorId(sectorCounter);
-
-  const newSites = { ...state.sites };
-  const siteIds: string[] = [];
-  for (const template of def.siteTemplates) {
-    const siteId = makeSiteId(siteCounter);
-    newSites[siteId] = { id: siteId, sectorId, templateId: template.templateId, tags: template.tags, facilityId: null };
-    siteIds.push(siteId);
-  }
-
-  const newTowns = { ...state.towns };
-  const townIds: string[] = [];
-  if (def.hasTown) {
-    const townId = makeTownId(townCounter);
-    newTowns[townId] = { id: townId, sectorId };
-    townIds.push(townId);
-  }
-
-  state.sectors = {
-    ...state.sectors,
-    [sectorId]: {
-      id: sectorId,
-      definitionId: def.id,
-      accessState: def.initialAccessState,
-      townIds,
-      siteIds,
-    },
+export function createCentreSector(state: CampaignState, _catalog: IndexedCatalog): void {
+  const initialCentreMap = initialCentreMapJson as {
+    readonly idCounters: { readonly sectors: number; readonly sites: number; readonly towns: number };
+    readonly sectors: Readonly<Record<string, CampaignState["sectors"][string]>>;
+    readonly sites: Readonly<Record<string, CampaignState["sites"][string]>>;
+    readonly towns: Readonly<Record<string, CampaignState["towns"][string]>>;
   };
-  state.sites = newSites;
-  state.towns = newTowns;
+
+  state.sectors = JSON.parse(JSON.stringify(initialCentreMap.sectors));
+  state.sites = JSON.parse(JSON.stringify(initialCentreMap.sites));
+  state.towns = JSON.parse(JSON.stringify(initialCentreMap.towns));
   state.idCounters = {
     ...state.idCounters,
-    sectors: sectorCounter.peek(),
-    sites: siteCounter.peek(),
-    towns: townCounter.peek(),
+    sectors: initialCentreMap.idCounters.sectors,
+    sites: initialCentreMap.idCounters.sites,
+    towns: initialCentreMap.idCounters.towns,
   };
 }
 

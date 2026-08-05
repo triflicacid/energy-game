@@ -1,16 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { buildIndexedCatalog, loadBundledContent } from "@content";
 import type { IndexedCatalog } from "@content";
+import type { SectorDef } from "@content/defs";
 import { createCampaignState } from "@simulation/CampaignState";
 import type { CampaignState } from "@simulation/CampaignState";
 import { createCentreSector } from "@simulation/CentreSector";
 import {
   projectSectorScene,
   SceneProjectionError,
-  type TownPresentationLayouts,
-  type ReservoirPresentationLayouts,
-  DEFAULT_RESERVOIR_LAYOUTS,
-  DEFAULT_TOWN_LAYOUTS,
 } from "./SceneProjector";
 
 function loadCatalog(): IndexedCatalog {
@@ -79,16 +76,17 @@ describe("projectSectorScene — entities", () => {
   it("emits a town entity", () => {
     const { state, catalog, sectorId } = setupState();
     const scene = projectSectorScene(sectorId, state, catalog);
-    expect(scene.entities.some(c => c.spriteId === "town")).toBe(true);
+    expect(scene.entities.some(c => c.spriteId.startsWith("town"))).toBe(true);
   });
 
   it("places the town at the default layout cell (6, 6) for the centre sector", () => {
     const { state, catalog, sectorId } = setupState();
     const scene = projectSectorScene(sectorId, state, catalog);
-    const town = scene.entities.find(c => c.spriteId === "town");
+    const town = scene.entities.find(c => c.col === 6 && c.row === 6 && c.spriteId.startsWith("town"));
     expect(town).toBeDefined();
     expect(town?.col).toBe(6);
     expect(town?.row).toBe(6);
+    expect(town?.spriteId).toBe("town-tier-1");
   });
 
   it("does not emit any entity for the waterwheel-site when no facility is built", () => {
@@ -103,7 +101,7 @@ describe("projectSectorScene — entities", () => {
     const { state, catalog, sectorId } = setupState();
     const scene = projectSectorScene(sectorId, state, catalog);
     const unexpected = scene.entities.filter(
-      c => c.spriteId !== "forest-site" && c.spriteId !== "town",
+      c => c.spriteId !== "forest-site" && !c.spriteId.startsWith("town"),
     );
     expect(unexpected).toHaveLength(0);
   });
@@ -189,20 +187,42 @@ describe("projectSectorScene — determinism", () => {
     expect(scene1).toEqual(scene2);
   });
 
-  it("reversing the town id array does not change the output", () => {
+  it("reversing the town record order does not change the output", () => {
     const { state, catalog, sectorId } = setupState();
-    const sector = state.sectors[sectorId];
-    if (!sector) throw new Error("sector missing");
+    const reversedTowns = Object.fromEntries(Object.entries(state.towns).reverse());
     const stateReversed: CampaignState = {
       ...state,
-      sectors: {
-        ...state.sectors,
-        [sectorId]: { ...sector, townIds: [...sector.townIds].reverse() },
-      },
+      towns: reversedTowns,
     };
     const scene1 = projectSectorScene(sectorId, state, catalog);
     const scene2 = projectSectorScene(sectorId, stateReversed, catalog);
     expect(scene1).toEqual(scene2);
+  });
+
+  it("matches town presentation cells by townId rather than by array position", () => {
+    const { state, catalog, sectorId } = setupState();
+    const sector = state.sectors[sectorId];
+    const townId = Object.values(state.towns).find(town => town.sectorId === sectorId)?.id;
+    if (!sector || !townId) throw new Error("sector or town missing");
+
+    const stateReorderedCells: CampaignState = {
+      ...state,
+      sectors: {
+        ...state.sectors,
+        [sectorId]: {
+          ...sector,
+          presentationCells: [
+            ...sector.presentationCells.filter(c => c.kind !== "town"),
+            { kind: "town", townId: "town:999", col: 1, row: 1, tier: 6 },
+            { kind: "town", townId, col: 4, row: 3, tier: 2 },
+          ],
+        },
+      },
+    };
+
+    const scene = projectSectorScene(sectorId, stateReorderedCells, catalog);
+    expect(scene.entities.some(c => c.col === 4 && c.row === 3 && c.spriteId === "town-tier-2")).toBe(true);
+    expect(scene.entities.some(c => c.col === 1 && c.row === 1 && c.spriteId === "town-tier-6")).toBe(false);
   });
 
   it("biomes are sorted row-major (row asc, col asc)", () => {
@@ -255,25 +275,96 @@ describe("projectSectorScene — error handling", () => {
 
   it("throws SceneProjectionError when the biome sprite is not in the world atlas", () => {
     const { state, catalog, sectorId } = setupState();
-    const badSector = { ...catalog.sectors.get("centre"), biome: "nonexistent-biome" as never };
+    const centre = catalog.sectors.get("centre");
+    if (!centre) throw new Error("centre sector missing");
+    const badSector = { ...centre, biome: "nonexistent-biome" } as unknown as SectorDef;
     const catalogBadBiome = {
       ...catalog,
-      sectors: new Map([...catalog.sectors.entries(), ["centre", badSector]]),
+      sectors: new Map<string, SectorDef>([...catalog.sectors.entries(), ["centre", badSector]]),
     } as unknown as IndexedCatalog;
     expect(() => projectSectorScene(sectorId, state, catalogBadBiome))
       .toThrow(SceneProjectionError);
   });
 
-  it("uses a provided townLayouts override instead of the defaults", () => {
+  it("uses sector-owned town presentation cells instead of hardcoded renderer defaults", () => {
     const { state, catalog, sectorId } = setupState();
-    const customLayouts: TownPresentationLayouts = new Map([
-      ["centre", [{ col: 3, row: 3 }]],
-    ]);
-    const scene = projectSectorScene(sectorId, state, catalog, customLayouts);
-    const town = scene.entities.find(c => c.spriteId === "town");
+    const sector = state.sectors[sectorId];
+    const townId = Object.values(state.towns).find(town => town.sectorId === sectorId)?.id;
+    if (!sector) throw new Error("sector missing");
+    if (!townId) throw new Error("town missing");
+    const stateCustom: CampaignState = {
+      ...state,
+      sectors: {
+        ...state.sectors,
+        [sectorId]: {
+          ...sector,
+          presentationCells: [
+            ...sector.presentationCells.filter(c => c.kind !== "town"),
+            { kind: "town", townId, col: 3, row: 3 },
+          ],
+        },
+      },
+    };
+    const scene = projectSectorScene(sectorId, stateCustom, catalog);
+    const town = scene.entities.find(c => c.col === 3 && c.row === 3);
     expect(town).toBeDefined();
     expect(town?.col).toBe(3);
     expect(town?.row).toBe(3);
+    expect(town?.spriteId).toBe("town");
+  });
+
+  it("resolves town-tier-1 through town-tier-6 from presentation tier state", () => {
+    const { state, catalog, sectorId } = setupState();
+    const sector = state.sectors[sectorId];
+    const townId = Object.values(state.towns).find(town => town.sectorId === sectorId)?.id;
+    if (!sector) throw new Error("sector missing");
+    if (!townId) throw new Error("town missing");
+    const townCount = Object.values(state.towns).filter(town => town.sectorId === sectorId).length;
+
+    for (let tier = 1; tier <= 6; tier++) {
+      const stateTiered: CampaignState = {
+        ...state,
+        sectors: {
+          ...state.sectors,
+          [sectorId]: {
+            ...sector,
+            presentationCells: [
+              ...sector.presentationCells.filter(c => c.kind !== "town"),
+                  { kind: "town", townId, col: 2 + tier, row: 2, tier: tier as 1 | 2 | 3 | 4 | 5 | 6 },
+            ],
+          },
+        },
+      };
+      const scene = projectSectorScene(sectorId, stateTiered, catalog);
+      const town = scene.entities.find(c => c.col === 2 + tier && c.row === 2);
+      expect(town).toBeDefined();
+      expect(town?.spriteId).toBe(`town-tier-${tier}`);
+      expect(scene.entities.filter(c => c.spriteId.startsWith("town"))).toHaveLength(townCount);
+    }
+  });
+
+  it("falls back to base town sprite when tier is not provided", () => {
+    const { state, catalog, sectorId } = setupState();
+    const sector = state.sectors[sectorId];
+    const townId = Object.values(state.towns).find(town => town.sectorId === sectorId)?.id;
+    if (!sector) throw new Error("sector missing");
+    if (!townId) throw new Error("town missing");
+    const stateCustom: CampaignState = {
+      ...state,
+      sectors: {
+        ...state.sectors,
+        [sectorId]: {
+          ...sector,
+          presentationCells: [
+            ...sector.presentationCells.filter(c => c.kind !== "town"),
+            { kind: "town", townId, col: 4, row: 4 },
+          ],
+        },
+      },
+    };
+    const scene = projectSectorScene(sectorId, stateCustom, catalog);
+    const town = scene.entities.find(c => c.col === 4 && c.row === 4);
+    expect(town?.spriteId).toBe("town");
   });
 });
 
@@ -352,28 +443,46 @@ describe("projectSectorScene — groundOverlays (reservoir autotile)", () => {
     expect(cell?.spriteId).toBe("reservoir-water-03"); // not -0b (N+E+W)
   });
 
-  it("cells from different join groups do not connect even when adjacent", () => {
+  it("adjacent reservoir cells connect even when authored as separate entries", () => {
     const { state, catalog, sectorId } = setupState();
-    const splitLayout: ReservoirPresentationLayouts = new Map([
-      [
-        "centre",
-        [
-          { col: 5, row: 5, joinGroup: "a" },
-          { col: 6, row: 5, joinGroup: "b" }, // adjacent east, different group
-        ],
-      ],
-    ]);
-    const scene = projectSectorScene(sectorId, state, catalog, DEFAULT_TOWN_LAYOUTS, splitLayout);
+    const sector = state.sectors[sectorId];
+    if (!sector) throw new Error("sector missing");
+    const stateCustom: CampaignState = {
+      ...state,
+      sectors: {
+        ...state.sectors,
+        [sectorId]: {
+          ...sector,
+          presentationCells: [
+            ...sector.presentationCells.filter(c => c.kind !== "reservoir"),
+            { kind: "reservoir", col: 5, row: 5 },
+            { kind: "reservoir", col: 6, row: 5 },
+          ],
+        },
+      },
+    };
+    const scene = projectSectorScene(sectorId, stateCustom, catalog);
     const left = scene.groundOverlays.find(c => c.col === 5 && c.row === 5);
     const right = scene.groundOverlays.find(c => c.col === 6 && c.row === 5);
-    expect(left?.spriteId).toBe("reservoir-water-00"); // isolated, no E connection
-    expect(right?.spriteId).toBe("reservoir-water-00"); // isolated, no W connection
+    expect(left?.spriteId).toBe("reservoir-water-02"); // E connection
+    expect(right?.spriteId).toBe("reservoir-water-08"); // W connection
   });
 
   it("emits no groundOverlays when the reservoir layout is empty for the sector", () => {
     const { state, catalog, sectorId } = setupState();
-    const emptyLayout: ReservoirPresentationLayouts = new Map([["centre", []]]);
-    const scene = projectSectorScene(sectorId, state, catalog, DEFAULT_TOWN_LAYOUTS, emptyLayout);
+    const sector = state.sectors[sectorId];
+    if (!sector) throw new Error("sector missing");
+    const stateCustom: CampaignState = {
+      ...state,
+      sectors: {
+        ...state.sectors,
+        [sectorId]: {
+          ...sector,
+          presentationCells: sector.presentationCells.filter(c => c.kind !== "reservoir"),
+        },
+      },
+    };
+    const scene = projectSectorScene(sectorId, stateCustom, catalog);
     expect(scene.groundOverlays).toHaveLength(0);
   });
 

@@ -15,9 +15,6 @@ export { type SceneCell, type WorldScene } from "./WorldScene";
 export {
   projectSectorScene,
   SceneProjectionError,
-  DEFAULT_TOWN_LAYOUTS,
-  type CellLayout,
-  type TownPresentationLayouts,
 } from "./SceneProjector";
 export {
   getMinZoom,

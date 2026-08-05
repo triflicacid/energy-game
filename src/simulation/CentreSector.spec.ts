@@ -3,7 +3,7 @@ import { buildIndexedCatalog, loadBundledContent } from "@content";
 import type { IndexedCatalog } from "@content";
 import { createCampaignState } from "./CampaignState";
 import type { CampaignState } from "./CampaignState";
-import { createCentreSector, CentreSectorError } from "./CentreSector";
+import { createCentreSector } from "./CentreSector";
 
 // load and validate the real bundled content once for all tests
 function loadCatalog(): IndexedCatalog {
@@ -47,14 +47,12 @@ describe("createCentreSector", () => {
     expect(allTags).toContain("waterwheel-site");
   });
 
-  it("sector siteIds match the created site entries", () => {
+  it("sites belonging to the sector are discoverable from top-level site state", () => {
     createCentreSector(state, catalog);
     const sector = Object.values(state.sectors)[0];
     if (!sector) throw new Error("sector missing");
-    for (const siteId of sector.siteIds) {
-      expect(state.sites[siteId]).toBeDefined();
-    }
-    expect(sector.siteIds.length).toBe(Object.keys(state.sites).length);
+    const sectorSites = Object.values(state.sites).filter(site => site.sectorId === sector.id);
+    expect(sectorSites).toHaveLength(Object.keys(state.sites).length);
   });
 
   it("each site references the sector id", () => {
@@ -81,8 +79,7 @@ describe("createCentreSector", () => {
   it("town is an independent entity with its own id", () => {
     createCentreSector(state, catalog);
     const town = Object.values(state.towns)[0];
-    expect(typeof town?.id).toBe("string");
-    expect(town?.id.length).toBeGreaterThan(0);
+    expect(town?.id).toBe("town:1");
   });
 
   it("town references the sector id, not embedded state", () => {
@@ -93,43 +90,66 @@ describe("createCentreSector", () => {
     expect(town.sectorId).toBe(sectorId);
   });
 
-  it("sector townIds contains the town id", () => {
+  it("towns belonging to the sector are discoverable from top-level town state", () => {
     createCentreSector(state, catalog);
     const sector = Object.values(state.sectors)[0];
     const townId = Object.keys(state.towns)[0];
     if (!sector || !townId) throw new Error("sector or town missing");
-    expect(sector.townIds).toContain(townId);
+    const sectorTownIds = Object.values(state.towns)
+      .filter(town => town.sectorId === sector.id)
+      .map(town => town.id);
+    expect(sectorTownIds).toContain(townId);
   });
 
-  it("idCounters are advanced after creation", () => {
+  it("generates data-driven town presentation cells on the sector", () => {
     createCentreSector(state, catalog);
-    expect(state.idCounters.sectors).toBeGreaterThan(0);
-    expect(state.idCounters.sites).toBeGreaterThan(0);
-    expect(state.idCounters.towns).toBeGreaterThan(0);
+    const sector = Object.values(state.sectors)[0];
+    const townId = Object.keys(state.towns)[0];
+    if (!sector) throw new Error("sector missing");
+    if (!townId) throw new Error("town missing");
+    const townCells = sector.presentationCells.filter(c => c.kind === "town");
+    expect(townCells).toHaveLength(1);
+    expect(townCells[0]).toMatchObject({ kind: "town", townId, col: 6, row: 6, tier: 1 });
   });
 
-  it("calling twice produces two sectors with different ids", () => {
+  it("generates data-driven reservoir presentation cells on the sector", () => {
     createCentreSector(state, catalog);
-    createCentreSector(state, catalog);
-    expect(Object.keys(state.sectors)).toHaveLength(2);
-    const ids = Object.keys(state.sectors);
-    expect(ids[0]).not.toBe(ids[1]);
+    const sector = Object.values(state.sectors)[0];
+    if (!sector) throw new Error("sector missing");
+    const reservoirCells = sector.presentationCells.filter(c => c.kind === "reservoir");
+    expect(reservoirCells).toHaveLength(5);
+    expect(reservoirCells.some(c => c.col === 9 && c.row === 4 && c.kind === "reservoir")).toBe(true);
+    expect(reservoirCells.some(c => c.col === 10 && c.row === 6 && c.kind === "reservoir")).toBe(true);
   });
 
-  it("throws CentreSectorError when the centre definition is absent", () => {
-    // build a catalog without any sectors
+  it("idCounters are populated from fixture values", () => {
+    createCentreSector(state, catalog);
+    expect(state.idCounters.sectors).toBe(1);
+    expect(state.idCounters.sites).toBe(2);
+    expect(state.idCounters.towns).toBe(1);
+  });
+
+  it("calling twice re-applies the same fixture state", () => {
+    createCentreSector(state, catalog);
+    createCentreSector(state, catalog);
+    expect(Object.keys(state.sectors)).toEqual(["sector:1"]);
+    expect(Object.keys(state.sites)).toEqual(["site:1", "site:2"]);
+    expect(Object.keys(state.towns)).toEqual(["town:1"]);
+  });
+
+  it("does not depend on center sector definition presence in catalog", () => {
+    // fixture copy intentionally ignores content-sector lookup during fresh-map bootstrap
     const load = loadBundledContent();
     if (!load.ok) throw new Error(JSON.stringify(load.issues));
     const noSectors = buildIndexedCatalog({ ...load.bundle, sectors: [] });
     if (!noSectors.ok) throw new Error(JSON.stringify(noSectors.issues));
-    expect(() => createCentreSector(state, noSectors.catalog)).toThrow(CentreSectorError);
+    expect(() => createCentreSector(state, noSectors.catalog)).not.toThrow();
   });
 
-  it("throws CentreSectorError when a site template uses an unknown tag", () => {
+  it("does not validate site tags against catalog during fixture copy", () => {
     const load = loadBundledContent();
     if (!load.ok) throw new Error(JSON.stringify(load.issues));
-    // inject a sector def with an unknown tag, bypassing semantic validation
-    // by directly constructing a catalog-like object
+    // inject bad sector data in catalog; fixture copy should remain unaffected
     const manipulatedCatalog = {
       ...catalog,
       sectors: new Map([
@@ -144,7 +164,7 @@ describe("createCentreSector", () => {
         }],
       ]),
     } as unknown as IndexedCatalog;
-    expect(() => createCentreSector(state, manipulatedCatalog)).toThrow(CentreSectorError);
+    expect(() => createCentreSector(state, manipulatedCatalog)).not.toThrow();
   });
 
   it("state serializes cleanly after creation", () => {

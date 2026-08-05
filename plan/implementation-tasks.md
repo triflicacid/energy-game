@@ -16,10 +16,11 @@ EnergyGame contains tested foundation, content, simulation, application-shell, s
 - `U01b` ✅ `WorldScene` / `SceneCell` immutable scene model; `SceneProjector.projectSectorScene` pure function; `SiteSerialState.templateId` preserves template identity; `TownPresentationLayouts` deterministic town grid positions; 402 tests passing at completion.
 - `U01c` ✅ `CanvasRenderer` draws layered biome → ground overlays → entities → facilities using `WorldAtlasPainter`; `Application` eagerly loads bundled content, builds `IndexedCatalog`, and creates the initial `CampaignState` with the centre sector stamped in.
 - `U01di` ✅ deterministic reservoir fixture layout in `SceneProjector`; cardinal-mask autotile selection (`reservoir-water-00`…`0f`) for shared join-group neighbors; diagonal-only and cross-group adjacency do not connect.
+- `U01dii` ✅ deterministic town-tier fixture support in `SceneProjector`; town sprites resolve to `town-tier-1`…`town-tier-6` from presentation tier state with `town` fallback when tier is absent.
 - **Camera core** ✅ `CameraState.ts` pure math (world/screen transforms, zoom-toward-point, clamp helpers, 29 tests); `CanvasRenderer` has scroll-to-zoom (10% step, max 10×), unbounded drag-to-pan in both views, sector detail / campaign map view modes, `M` key toggle, shift+scroll transition to campaign map at `0.5 × fitZoom`, initial zoom at `2 × fitZoom` for immediate panning room.
 - **Campaign map placeholder** ✅ dark background with a biome-coloured flat-top hex node, sector name label, and return-hint text; drag-pan is unbounded.
 - **Design notes recorded**: mechanical workshop tier progression (`plan/power-plants.md`); camera and navigation model including two view modes and control scheme (`plan/map-and-regions.md`).
-- 449 tests passing; 27 test files.
+- 451 tests passing; 27 test files.
 
 ## Non-negotiable decisions
 
@@ -124,7 +125,7 @@ F00
          │       └─ ✅ U01c layered centre-sector composition
          │           │   (camera core also complete — see U01e note below)
          │           └─ ✅ U01di reservoir visual variants
-         │               └─ U01dii town visual variants
+         │               └─ ✅ U01dii town visual variants
          │                   └─ U01e (remainder) interaction rendering (+ U02)
          └─ U02 HTML status/build/research UI (+ S02 + S03 + V01 + C02 + A01)
 
@@ -633,7 +634,7 @@ Integrate a tested scenario:
 
 **Acceptance:** all 16 reservoir autotile masks render at correct positions with matching shared edges; distinct join groups and diagonal-only contacts remain disconnected; visual reservoir area does not determine capacity or connectivity.
 
-## U01dii — Town visual variants
+## ✅ U01dii — Town visual variants
 
 **Depends on:** U01di
 

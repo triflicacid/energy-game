@@ -6,7 +6,7 @@ import type { ClockSerialState } from "./SimulationClock";
 import type { HistoryEntry } from "./EventHistory";
 
 /** current format version; increment on breaking state schema changes */
-export const CAMPAIGN_STATE_VERSION = 1;
+export const CAMPAIGN_STATE_VERSION = 4;
 
 /** serialized per-entity id counter values */
 export type IdCounterStates = {
@@ -35,12 +35,35 @@ export type ResearchProgressState = {
 };
 
 /** serialized sector instance; content definition referenced by id */
+export type CellSerialState = {
+  readonly col: number;
+  readonly row: number;
+};
+
+export type TownVisualTier = 1 | 2 | 3 | 4 | 5 | 6;
+
+/** presentation-only town placement/tier fixture owned by the sector state */
+export type TownPresentationCellSerialState = CellSerialState & {
+  readonly kind: "town";
+  readonly townId: string;
+  readonly tier?: TownVisualTier;
+};
+
+/** presentation-only reservoir tile fixture owned by the sector state */
+export type ReservoirPresentationCellSerialState = CellSerialState & {
+  readonly kind: "reservoir";
+};
+
+/** presentation-only cell data generated per sector and consumed by rendering */
+export type PresentationCellSerialState =
+  | TownPresentationCellSerialState
+  | ReservoirPresentationCellSerialState;
+
 export type SectorSerialState = {
   readonly id: string;
   readonly definitionId: string;
   readonly accessState: SectorAccessState;
-  readonly townIds: readonly string[];
-  readonly siteIds: readonly string[];
+  readonly presentationCells: readonly PresentationCellSerialState[];
 };
 
 /** serialized town instance */

@@ -1,62 +1,15 @@
 // builds the renderer-facing WorldScene from read-only campaign state and content definitions
 
 import type { IndexedCatalog } from "@content";
-import type { ReadonlyCampaignState } from "@simulation/CampaignState";
+import type {
+  ReadonlyCampaignState,
+  ReservoirPresentationCellSerialState,
+  TownPresentationCellSerialState,
+  TownVisualTier,
+} from "@simulation/CampaignState";
 import { reservoirConnectionMask, reservoirSpriteId } from "./ReservoirAutotile";
 import { WORLD_SPRITES, type WorldSpriteId } from "./generated/world-atlas";
 import type { SceneCell, WorldScene } from "./WorldScene";
-
-/** base grid position shared by all presentation cell layout types */
-export interface CellLayout {
-  readonly col: number;
-  readonly row: number;
-}
-
-/** maps a sector definition ID to the ordered cell positions of its towns */
-export type TownPresentationLayouts = ReadonlyMap<string, readonly CellLayout[]>;
-
-/**
- * default town presentation layouts for all hand-authored sectors.
- * towns have no spatial coordinates in simulation state; this map supplies
- * deterministic grid positions for each sector's towns.
- */
-export const DEFAULT_TOWN_LAYOUTS: TownPresentationLayouts = new Map([
-  ["centre", [{ col: 6, row: 6 }]],
-]);
-
-/**
- * one reservoir water cell in the presentation layer.
- * cells sharing the same joinGroup join visually (their autotile mask connects them);
- * cells in different joinGroups never connect even when adjacent on the grid.
- */
-export interface ReservoirCellLayout extends CellLayout {
-  /** opaque string key; cells with identical joinGroup form one visual body */
-  readonly joinGroup: string;
-}
-
-/** maps a sector definition ID to the reservoir cells that should be rendered */
-export type ReservoirPresentationLayouts = ReadonlyMap<string, readonly ReservoirCellLayout[]>;
-
-/**
- * deterministic reservoir presentation fixtures for hand-authored sectors.
- * water extent has no simulation state yet; this supplies the rendering fixture
- * until T01 water systems are implemented.
- *
- * centre-sector layout: 2×2 reservoir (cols 9–10, rows 4–5) + one cell at (10, 6).
- * the cell at (9, 5) is directly east of the waterwheel at (8, 5), satisfying adjacency.
- */
-export const DEFAULT_RESERVOIR_LAYOUTS: ReservoirPresentationLayouts = new Map([
-  [
-    "centre",
-    [
-      { col: 9, row: 4, joinGroup: "res-1" },
-      { col: 10, row: 4, joinGroup: "res-1" },
-      { col: 9, row: 5, joinGroup: "res-1" },
-      { col: 10, row: 5, joinGroup: "res-1" },
-      { col: 10, row: 6, joinGroup: "res-1" },
-    ],
-  ],
-]);
 
 /** thrown when a required sector or definition is absent during projection */
 export class SceneProjectionError extends Error {
@@ -66,6 +19,22 @@ export class SceneProjectionError extends Error {
   }
 }
 
+function resolveTownSpriteId(tier: TownVisualTier | undefined): WorldSpriteId {
+  if (tier === undefined) {
+    return "town";
+  }
+  const spriteId = `town-tier-${tier}` as WorldSpriteId;
+  return WORLD_SPRITES[spriteId] ? spriteId : "town";
+}
+
+function isTownPresentationCell(cell: { readonly kind: string }): cell is TownPresentationCellSerialState {
+  return cell.kind === "town";
+}
+
+function isReservoirPresentationCell(cell: { readonly kind: string }): cell is ReservoirPresentationCellSerialState {
+  return cell.kind === "reservoir";
+}
+
 /**
  * projects campaign state for one sector into a deterministic, renderer-facing WorldScene.
  * the returned scene contains no canvas pixels, atlas coordinates, or simulation mutable state.
@@ -73,16 +42,12 @@ export class SceneProjectionError extends Error {
  * @param sectorId - runtime ID of the sector to project
  * @param state - read-only campaign state
  * @param catalog - indexed content definitions
- * @param townLayouts - deterministic town cell positions keyed by sector definition ID
- * @param reservoirLayouts - deterministic reservoir cell fixtures keyed by sector definition ID
  * @throws SceneProjectionError if the sector or its definition cannot be resolved
  */
 export function projectSectorScene(
   sectorId: string,
   state: ReadonlyCampaignState,
   catalog: IndexedCatalog,
-  townLayouts: TownPresentationLayouts = DEFAULT_TOWN_LAYOUTS,
-  reservoirLayouts: ReservoirPresentationLayouts = DEFAULT_RESERVOIR_LAYOUTS,
 ): WorldScene {
   const sector = state.sectors[sectorId];
   if (!sector) {
@@ -119,10 +84,11 @@ export function projectSectorScene(
     }
   }
 
-  // site overlays and facilities
-  for (const siteId of sector.siteIds) {
-    const site = state.sites[siteId];
-    if (!site) continue;
+  // site overlays and facilities are derived from top-level site state by sectorId
+  const sectorSites = Object.values(state.sites)
+    .filter(site => site.sectorId === sectorId)
+    .sort((a, b) => a.id.localeCompare(b.id));
+  for (const site of sectorSites) {
 
     const template = templateByTemplateId.get(site.templateId);
     if (!template) {
@@ -157,23 +123,28 @@ export function projectSectorScene(
     }
   }
 
-  // towns: placed at deterministic layout positions independent of simulation coordinates
-  const townCells = townLayouts.get(sector.definitionId) ?? [];
-  for (let i = 0; i < sector.townIds.length; i++) {
-    const cell = townCells[i];
+  // towns: placement/tier come from sector-owned presentation state
+  const townCells = sector.presentationCells.filter(isTownPresentationCell);
+  const townCellByTownId = new Map(townCells.map(cell => [cell.townId, cell]));
+  const sectorTownIds = Object.values(state.towns)
+    .filter(town => town.sectorId === sectorId)
+    .map(town => town.id)
+    .sort((a, b) => a.localeCompare(b));
+  for (const townId of sectorTownIds) {
+    const cell = townCellByTownId.get(townId);
     if (!cell) {
-      console.warn(`SceneProjector: no layout cell for town index ${i} in sector "${sector.definitionId}"`);
+      console.warn(`SceneProjector: no town presentation cell for town "${townId}" in sector "${sector.definitionId}"`);
       continue;
     }
-    entities.push({ col: cell.col, row: cell.row, spriteId: "town" });
+    entities.push({ col: cell.col, row: cell.row, spriteId: resolveTownSpriteId(cell.tier) });
   }
 
-  // reservoir autotile: build a position→joinGroup lookup for O(1) neighbour queries
-  const reservoirCells = reservoirLayouts.get(sector.definitionId) ?? [];
-  const reservoirByPos = new Map(reservoirCells.map(c => [`${c.col},${c.row}`, c.joinGroup]));
+  // reservoir autotile: connect any cardinally adjacent reservoir cells
+  const reservoirCells = sector.presentationCells.filter(isReservoirPresentationCell);
+  const reservoirPositions = new Set(reservoirCells.map(c => `${c.col},${c.row}`));
   for (const cell of reservoirCells) {
     const mask = reservoirConnectionMask((dx, dy) => {
-      return reservoirByPos.get(`${cell.col + dx},${cell.row + dy}`) === cell.joinGroup;
+      return reservoirPositions.has(`${cell.col + dx},${cell.row + dy}`);
     });
     groundOverlays.push({ col: cell.col, row: cell.row, spriteId: reservoirSpriteId(mask) });
   }
