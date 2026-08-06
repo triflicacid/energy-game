@@ -18,7 +18,13 @@ Older technologies retain niches; progression should not reduce to buying a univ
 
 ## Mechanical generation and first electricity
 
-### Undershot waterwheel — Era 0
+The two mechanical-power families are separate progression branches. Waterwheels retain their water sites and lead into iron waterwheels and hydro power; windmills retain eligible wind sites and lead into increasingly capable wind turbines. One never succeeds or rebuilds into the other.
+
+### Waterwheel branch
+
+Undershot and overshot wheels are parallel Era 0 designs for different water conditions, not consecutive tiers. Both can be rebuilt into an iron waterwheel and later site-appropriate hydro machinery.
+
+#### Undershot waterwheel — Era 0
 
 - Low-head flowing-water site
 - Timber construction
@@ -28,21 +34,35 @@ Older technologies retain niches; progression should not reduce to buying a univ
 
 Upgrades: improved paddles, timber bracing, debris screen, sluice control, reinforced axle, iron bearings, dynamo attachment.
 
-### Overshot waterwheel — Era 0
+#### Overshot waterwheel — Era 0
 
 - Medium-head site or mill pond
 - More efficient at lower flow
 
 Upgrades: larger wheel, improved buckets, controlled mill race, iron rim/axle, enclosed gearing, dynamo.
 
-### Wooden windmill — Era 0
+### Windmill branch
+
+#### Wooden windmill — Era 0
 
 - Wind site
 - Variable local mechanical power
 
-Upgrades: larger/adjustable sails, rotating cap, gearing, storm brake, iron reinforcement, dynamo.
+Upgrades: larger/adjustable sails, improved gearing, storm brake, timber bracing.
 
-### Primitive dynamo — Era 1
+Successor: smock/tower windmill, retaining an eligible wind site and reusable civil works.
+
+#### Smock/tower windmill — Era 1
+
+- Taller, stronger successor with a fixed body and rotating cap
+- Larger swept area and improved gearing provide steadier mechanical output
+- Supports a larger dynamo than the early all-wood design
+
+Upgrades: patent sails, automatic fantail, iron reinforcement, improved brake, enclosed gearing.
+
+### Shaft-to-electricity conversion
+
+#### Primitive dynamo — Era 1
 
 - Iron core/shaft, copper windings, timber frame
 - Converts shaft power from a wheel or mill into local electricity
@@ -81,7 +101,7 @@ Later tiers add electrical drive, automated feed, heat treatment, and specialist
 
 ### Iron waterwheel — Era 1
 
-Major rebuild retaining the water site. More durable and capable of driving a larger dynamo.
+Major rebuild of an eligible undershot or overshot waterwheel, retaining the water site and reusable civil works. It is more durable and capable of driving a larger dynamo.
 
 ### Kaplan/Francis/Pelton water turbine — Era 3
 
@@ -91,7 +111,7 @@ The site recommends low-, medium-, or high-head machinery. Upgrades include runn
 
 - Reliable and inexpensive to operate
 - Output follows flow and environmental release
-- Natural successor at early mill sites
+- Natural successor at eligible early waterwheel/water-power sites
 
 ### Reservoir hydro — Era 3–4
 
@@ -111,13 +131,27 @@ Upgrades: reversible/variable-speed turbines, increased reservoir capacity, unde
 
 ## Wind power
 
+The wind successor chain starts with the wooden windmill: `wooden windmill → smock/tower windmill → dynamo windmill → iron/early-steel wind turbine → aerodynamic wind turbine → utility onshore wind`. Offshore designs branch from utility-scale wind where coastal conditions allow.
+
 ### Dynamo windmill — Era 1
 
-Small wind-electric machine with iron reinforcement and copper generator.
+Small wind-electric successor or major retrofit for an eligible windmill site, combining reinforced mill machinery with a copper generator. It produces electricity directly but remains limited by traditional sail aerodynamics and a low tower.
 
 ### Iron/early steel wind turbine — Era 2
 
-Upgrades: tower height, gearbox, sheet-metal blade, yaw, pitch, lightning protection, grid synchronization.
+- Purpose-built wind-electric machine rather than a mechanical mill with an attached dynamo
+- Iron or early-steel tower, geared generator, and sheet-metal multi-blade rotor
+- Better survivability and electrical output, but still optimized for modest wind speeds
+
+Upgrades: tower height, gearbox, sheet-metal blades, yaw control, storm protection, lightning protection, grid synchronization.
+
+### Aerodynamic wind turbine — Era 3
+
+- Fewer lift-based blades replace the drag-heavy multi-blade rotor
+- Improved airfoils, active yaw, and blade-pitch control raise output and usable wind range
+- Establishes the layout and controls used by later utility-scale turbines
+
+Upgrades: taller lattice/tubular tower, variable pitch, improved gearbox, induction generator, aerodynamic brake, remote monitoring.
 
 ### Utility onshore wind turbine/farm — Era 4
 

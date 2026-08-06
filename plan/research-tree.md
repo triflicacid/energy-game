@@ -207,11 +207,15 @@ Sustainable forestry improves management of viable innate sector woodland. Repla
 
 ### Water
 
-`waterwheel → reinforced wheel → capture/retention upgrades → hydro turbine → small/reservoir hydro → pumped storage`
+`undershot/overshot waterwheel → iron/reinforced waterwheel → capture/retention upgrades → hydro turbine → small/reservoir hydro → pumped storage`
+
+Undershot and overshot wheels are parallel starting designs for different water sites. Their successors retain eligible water sites and civil works; neither wheel progresses into any wind technology.
 
 ### Wind
 
-`windmill → dynamo windmill → iron/steel turbine → utility wind → offshore → floating offshore`
+`wooden windmill → smock/tower windmill → dynamo windmill → iron/early-steel wind turbine → aerodynamic wind turbine → utility onshore wind → fixed offshore wind → floating offshore wind`
+
+Wind successors retain eligible wind sites and reusable civil or grid works. The branch starts independently with the wooden windmill rather than inheriting from a waterwheel.
 
 ### Thermal fuels
 
