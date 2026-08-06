@@ -716,10 +716,10 @@ current inventory resource (`timber`, `wood-waste`) renders its real icon; an un
 iconId is visibly flagged rather than silently blank; no warehouse or sector-inventory panel is
 introduced.
 
-### U02a-2 — Sector natural-resource summary panel
+### U02a-2 — Sector natural-resource panel
 
 **Read:** `plan/resources-and-recycling.md` (sector reserve, innate woodland, and water
-sections), `plan/map-and-regions.md` (sector natural-state fields)
+sections), `plan/map-and-regions.md` (sector natural-state fields), [Cheat convention](code-architecture.md#cheat-convention)
 
 **Depends on:** U00, C02, M00
 
@@ -730,6 +730,22 @@ per the plan's one-material-inventory decision, natural stock never enters inven
 through a compatible extraction/forestry facility. Do not merge this with `U02a-1` or read from
 `CampaignState.inventory`.
 
+Structure it the same way as `U02a-1`'s inventory panel/popup pair, so the two read consistently:
+
+- A docked card on `#ui-root`'s right edge (reuse the `getDock` helper), listing the sector's
+  top 10 natural quantities. Clicking the card opens a full popup (a `<dialog>`, as
+  `InventoryModal` does) listing every natural quantity the sector has, sortable the same way.
+- The docked card is always read-only, even with cheats on — same rule `U02a-1` follows for the
+  inventory card.
+- While `isCheatsEnabled()` is true, rows in the popup only get chevron and click-to-edit
+  quantity controls, following the cheat convention: no-op when disabled, validate the target,
+  mutate the owning sector-state field (not inventory), then publish a fact event so both the
+  popup and the docked card refresh immediately. This needs new typed `Application` methods —
+  natural sector state is not inventory, so `cheatSetInventoryQuantity` does not cover it. Add
+  one method per quantity kind (for example `cheatSetSectorWoodlandBiomass`,
+  `cheatSetSectorWaterStock`, `cheatSetSectorReserveQuantity`), not a generic setter, matching
+  every other cheat method.
+
 **Deliverables:**
 
 - Read-only summary of the (currently single) sector's natural quantities: innate woodland
@@ -738,13 +754,17 @@ through a compatible extraction/forestry facility. Do not merge this with `U02a-
 - A reserve resource the sector does not have is omitted, not shown as zero.
 - Survey uncertainty is visibly distinguished from a confirmed reading — see the survey-related
   fields on `SectorReserveRuntimeState`.
+- The docked top-10 card, the full sortable popup, and (cheats on) the popup-only quantity
+  controls described above, plus the new `cheat*` `Application` methods they call.
 - No site list, no per-site selection, and no facility detail — that scope moved to `U02a-4`,
   shelved for now (see its card for why).
 
 **Acceptance:** panel reflects real `CampaignState` sector-natural fields, not fixture-only
 data or the company inventory; updates from events/read-only state, not polling; unsurveyed
 reserves are visually distinguished from surveyed ones; no facility, site, or inventory data
-appears on this panel.
+appears on this panel; quantity edit controls appear only in the popup and only while
+`isCheatsEnabled()` is true; each new cheat method no-ops while cheats are disabled and rejects
+an unknown sector/resource target the same way `cheatSetInventoryQuantity` does.
 
 ### U02a-3 — Research panel
 
