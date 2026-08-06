@@ -20,6 +20,8 @@ import initialInventoryJson from "@simulation/fixtures/initial-inventory.json";
 export type AppOwnEventMap = {
   /** fired after a cheat direct inventory mutation; lets panels refresh without waiting for the next tick */
   "inventory:changed": Readonly<{ resourceId: string; qty: number }>;
+  /** fired after a cheat direct sector natural-state mutation (woodland, water, or a reserve) */
+  "sector-natural:changed": Readonly<{ sectorId: string; field: "woodland" | "water" | "reserve"; resourceId?: string; qty: number }>;
 };
 
 /** merged event map for the application bus; grows as subsystems are added */
@@ -139,6 +141,39 @@ export class Application implements Disposable {
     this.bus.publish("inventory:changed", { resourceId, qty: clamped });
   }
 
+  /** cheat only: directly sets a sector's innate woodland biomass (kg), clamped to zero or above; does nothing unless cheats are enabled */
+  public cheatSetSectorWoodlandBiomass(sectorId: string, biomassKg: number): void {
+    if (!isCheatsEnabled()) return;
+    const sector = this.requireSector(sectorId, "cheatSetSectorWoodlandBiomass");
+    const clamped = Math.max(0, biomassKg);
+    this.setSectorNatural(sectorId, { ...sector.natural, innateWoodlandBiomassKg: clamped });
+    this.bus.publish("sector-natural:changed", { sectorId, field: "woodland", qty: clamped });
+  }
+
+  /** cheat only: directly sets a sector's local water stock (cubic meters), clamped to zero or above; does nothing unless cheats are enabled */
+  public cheatSetSectorWaterStock(sectorId: string, waterM3: number): void {
+    if (!isCheatsEnabled()) return;
+    const sector = this.requireSector(sectorId, "cheatSetSectorWaterStock");
+    const clamped = Math.max(0, waterM3);
+    this.setSectorNatural(sectorId, { ...sector.natural, waterStockM3: clamped });
+    this.bus.publish("sector-natural:changed", { sectorId, field: "water", qty: clamped });
+  }
+
+  /** cheat only: directly sets one of a sector's finite reserve quantities, clamped to zero or above, and marks it surveyed; does nothing unless cheats are enabled */
+  public cheatSetSectorReserveQuantity(sectorId: string, resourceId: string, qty: number): void {
+    if (!isCheatsEnabled()) return;
+    const sector = this.requireSector(sectorId, "cheatSetSectorReserveQuantity");
+    if (!this.catalog.getResource(resourceId)) {
+      throw new Error(`cheatSetSectorReserveQuantity: unknown resource "${resourceId}"`);
+    }
+    const clamped = Math.max(0, qty);
+    this.setSectorNatural(sectorId, {
+      ...sector.natural,
+      reserves: { ...sector.natural.reserves, [resourceId]: { remainingQuantity: clamped, surveyed: true } },
+    });
+    this.bus.publish("sector-natural:changed", { sectorId, field: "reserve", resourceId, qty: clamped });
+  }
+
   /** current measured rendering FPS (0 when the loop is not running) */
   public getFps(): number {
     return this.frameLoop.getActualFps();
@@ -181,6 +216,25 @@ export class Application implements Disposable {
       this.frameLoop.stop();
     }
     this.bus.dispose();
+  }
+
+  /** returns the named sector or throws; shared by every cheatSetSector* method */
+  private requireSector(sectorId: string, callerName: string): CampaignState["sectors"][string] {
+    const sector = this.campaignState.sectors[sectorId];
+    if (!sector) {
+      throw new Error(`${callerName}: unknown sector "${sectorId}"`);
+    }
+    return sector;
+  }
+
+  /** replaces one sector's natural-state record; shared by every cheatSetSector* method */
+  private setSectorNatural(sectorId: string, natural: CampaignState["sectors"][string]["natural"]): void {
+    const sector = this.campaignState.sectors[sectorId];
+    if (!sector) return; // callers already validated via requireSector
+    this.campaignState.sectors = {
+      ...this.campaignState.sectors,
+      [sectorId]: { ...sector, natural },
+    };
   }
 
   private readonly onFrame = (timestamp: number): void => {
