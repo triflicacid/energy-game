@@ -13,7 +13,8 @@ const DOCKED_ROW_LIMIT = 10;
 /**
  * read-only company-inventory panel.
  * lists the top 10 resources by quantity: icon, label, quantity, unit.
- * updates from `tick:after`, never per-animation-frame polling.
+ * updates from `tick:after` and `inventory:changed` (so cheat edits made in the popup show up here
+ * immediately too); never polls every animation frame.
  * the whole card is not a <button> but behaves like one (role, tabindex, Enter/Space) and opens
  * the full sortable inventory in `InventoryModal`.
  */
@@ -23,6 +24,7 @@ export class InventoryPanel implements Disposable {
   private readonly hint: HTMLElement;
   private readonly modal: InventoryModal;
   private readonly unsubscribeTick: () => void;
+  private readonly unsubscribeInventoryChanged: () => void;
 
   public constructor(private readonly app: Application) {
     this.panel = document.createElement("section");
@@ -55,24 +57,30 @@ export class InventoryPanel implements Disposable {
 
     this.modal = new InventoryModal(app);
 
-    this.render();
+    this.update();
     this.unsubscribeTick = app.getEvents().subscribe("tick:after", () => {
-      this.render();
+      this.update();
+    });
+    this.unsubscribeInventoryChanged = app.getEvents().subscribe("inventory:changed", () => {
+      this.update();
     });
   }
 
-  /** unsubscribes from clock events, disposes the modal, and detaches the panel from the DOM */
+  /** unsubscribes from clock/inventory events, disposes the modal, and detaches the panel from the DOM */
   public dispose(): void {
     this.unsubscribeTick();
+    this.unsubscribeInventoryChanged();
     this.modal.dispose();
     this.panel.remove();
   }
 
-  private render(): void {
+  /** reads the latest inventory state and rebuilds the card; safe to call anytime, including from outside */
+  public update(): void {
     const rows = sortInventoryRows(collectInventoryRows(this.app), "qty-desc");
     const shown = rows.slice(0, DOCKED_ROW_LIMIT);
 
-    this.list.replaceChildren(...shown.map(buildInventoryRowEl));
+    // no cheat arg here: quantity editing only ever appears in the InventoryModal popup, never this docked card
+    this.list.replaceChildren(...shown.map((row) => buildInventoryRowEl(row)));
     if (rows.length === 0) {
       this.list.appendChild(buildInventoryEmptyEl());
     }

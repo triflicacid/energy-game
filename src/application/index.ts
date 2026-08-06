@@ -12,11 +12,18 @@ import { FrameLoopController } from "@simulation/FrameLoopController";
 import { loadBundledContent } from "@content/ContentLoader";
 import { buildIndexedCatalog, type IndexedCatalog } from "@content/IndexedCatalog";
 import { createCampaignState, type CampaignState, type ReadonlyCampaignState } from "@simulation/CampaignState";
+import { isCheatsEnabled } from "@platform/CheatFlags";
 import initialCentreMapJson from "@simulation/fixtures/initial-centre-map.json";
 import initialInventoryJson from "@simulation/fixtures/initial-inventory.json";
 
+/** additional events published by Application itself, beyond the clock's own events */
+export type AppOwnEventMap = {
+  /** fired after a cheat direct inventory mutation; lets panels refresh without waiting for the next tick */
+  "inventory:changed": Readonly<{ resourceId: string; qty: number }>;
+};
+
 /** merged event map for the application bus; grows as subsystems are added */
-export type AppEventMap = SimClockEventMap;
+export type AppEventMap = SimClockEventMap & AppOwnEventMap;
 
 /** real-time milliseconds that represent one simulation tick at speed 1 */
 export const MS_PER_TICK_AT_SPEED_1 = 1_000;
@@ -117,6 +124,19 @@ export class Application implements Disposable {
   /** returns a read-only snapshot of the current campaign state */
   public getCampaignState(): ReadonlyCampaignState {
     return this.campaignState;
+  }
+
+  /** cheat only: directly sets an inventory quantity, clamped to zero or above, ignoring every recipe, extraction, or import rule; does nothing unless cheats are enabled */
+  public cheatSetInventoryQuantity(resourceId: string, qty: number): void {
+    if (!isCheatsEnabled()) return;
+    if (!this.catalog.getResource(resourceId)) {
+      throw new Error(`cheatSetInventoryQuantity: unknown resource "${resourceId}"`);
+    }
+    const clamped = Math.max(0, qty);
+    this.campaignState.inventory = {
+      quantities: { ...this.campaignState.inventory.quantities, [resourceId]: clamped },
+    };
+    this.bus.publish("inventory:changed", { resourceId, qty: clamped });
   }
 
   /** current measured rendering FPS (0 when the loop is not running) */

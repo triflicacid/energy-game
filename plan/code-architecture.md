@@ -526,6 +526,21 @@ Prefer explicit development tools over generic mutable state access:
 
 Debug functionality should be disabled or inaccessible in production builds and must use normal simulation/application boundaries where practical.
 
+### Cheat convention
+
+A single global flag (`isCheatsEnabled()`/`setCheatsEnabled()` in `platform/CheatFlags`, also reachable live from the browser console as `window.cheats.enabled`) gates all cheat-only behavior for the whole session. It never gates core simulation or gameplay logic, only debug-only UI affordances and the explicit `Application` methods listed below.
+
+Each cheat is its own typed `Application` method (for example `cheatSetInventoryQuantity`), not a generic setter. Every cheat method:
+
+- No-ops when `isCheatsEnabled()` is false, so cheat call sites are always safe to leave wired up
+- Validates its target (unknown resource/facility/node IDs throw) the same way an ordinary application method would
+- Mutates state through the normal owning slice, then publishes a fact event so presentation can refresh without waiting for the next tick
+- Is exposed in the UI only where it is meaningful, not globally; the cheat-editable quantity controls, for instance, appear in the full inventory popup but not the docked summary card
+
+Implemented so far: `Application.cheatSetInventoryQuantity` directly sets one company-inventory resource quantity, clamped to zero or above.
+
+Money and research are not inventory resources; they live in their own campaign-state slices (a plain number, and `ResearchProgressState`'s per-node `completed`/`progress` records). Cheating them will need their own methods following the same convention, such as `cheatSetMoney` and `cheatCompleteResearchNode`/`cheatAddResearchPoints` — they are not covered by the inventory cheat above.
+
 ## Initial implementation emphasis
 
 The first code should establish boundaries needed by the vertical slice:

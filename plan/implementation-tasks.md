@@ -20,9 +20,10 @@ EnergyGame contains tested foundation, content, simulation, application-shell, s
 - **Camera core** ✅ `CameraState.ts` pure math (world/screen transforms, zoom-toward-point, clamp helpers, 29 tests); `CanvasRenderer` has scroll-to-zoom (10% step, max 10×), unbounded drag-to-pan in both views, sector detail / campaign map view modes, `M` key toggle, shift+scroll transition to campaign map at `0.5 × fitZoom`, initial zoom at `2 × fitZoom` for immediate panning room.
 - **Campaign map placeholder** ✅ dark background with a biome-coloured flat-top hex node, sector name label, and return-hint text; drag-pan is unbounded.
 - `U02a-1` ✅ read-only inventory panel (`InventoryPanel`) docked at `#ui-root`'s right edge via a reusable `getDock` helper; icons resolve through `IconResolver`, which crops sprites from the same `world-atlas.png` the canvas loads (no second icon pipeline) and re-exports the atlas descriptors from `@rendering`; unresolvable icons show a dashed "?" placeholder instead of a blank; updates on `tick:after`, not per-frame polling.
+- **Inventory popup and cheat quantity editing** ✅ full sortable `InventoryModal` (name / qty ascending / qty descending) opened from the docked panel. While the global `isCheatsEnabled()` flag (`platform/CheatFlags`, live-toggleable from the browser console as `window.cheats.enabled`) is on, each row in the popup only — never the docked card — gets chevron and click-to-edit quantity controls backed by `Application.cheatSetInventoryQuantity`, which publishes an `inventory:changed` event so both the popup and the docked panel refresh immediately instead of waiting for the next tick. Background refreshes patch row values in place rather than re-sorting, so a row can never reorder out from under an in-progress click. See [Development and debug support](code-architecture.md#development-and-debug-support) for the general cheat convention this follows.
 - **Starting inventory** ✅ new `lumber` resource added to the `C02` resource catalog (`icon-lumber`, previously an unreferenced atlas sprite); new data-driven `src/simulation/fixtures/initial-inventory.json` seeds a fresh campaign's single company inventory (250 timber, 100 lumber) — loaded by `Application` alongside the centre-map bootstrap, same fixture-driven pattern, with a startup guard that rejects any fixture resourceId unknown to the catalog.
 - **Design notes recorded**: mechanical workshop tier progression (`plan/power-plants.md`); camera and navigation model including two view modes and control scheme (`plan/map-and-regions.md`).
-- 451 tests passing; 27 test files.
+- 490 tests passing; 28 test files.
 
 ## Non-negotiable decisions
 
@@ -129,9 +130,10 @@ F00
          │           └─ ✅ U01di reservoir visual variants
          │               └─ ✅ U01dii town visual variants
          │                   └─ U01e (remainder) interaction rendering (+ U02)
+         │                       └─ U02a-4 sector site/facility detail (shelved, + U02)
          └─ U02a read-only HTML panels (+ S02 + S03 + C02 + M00)
-             ├─ U02a-1 inventory panel
-             ├─ U02a-2 sector/site/facility detail panel
+             ├─ ✅ U02a-1 inventory panel
+             ├─ U02a-2 sector natural-resource summary panel
              └─ U02a-3 research panel
                  └─ U02 build controls + research assignment (+ V01 + A01)
 
@@ -691,8 +693,9 @@ no facility-state field recording which research node a facility targets. That c
 not currently its own task anywhere in this plan; `U02`'s remaining build-control and
 research-assignment deliverables stay blocked on it rather than on `V01`/`A01`.
 
-`U02a` is split into three independent sub-tasks so each panel can be implemented and reviewed
-on its own. They may be done in any order; none depends on the others.
+`U02a` is split into independent sub-tasks so each panel can be implemented and reviewed on its
+own. `U02a-1`, `U02a-2`, and `U02a-3` may be done in any order; none depends on the others.
+`U02a-4` is a fourth sub-task, shelved until later — see its card for why.
 
 ### U02a-1 — Inventory panel
 
@@ -713,25 +716,35 @@ current inventory resource (`timber`, `wood-waste`) renders its real icon; an un
 iconId is visibly flagged rather than silently blank; no warehouse or sector-inventory panel is
 introduced.
 
-### U02a-2 — Sector/site/facility detail panel
+### U02a-2 — Sector natural-resource summary panel
+
+**Read:** `plan/resources-and-recycling.md` (sector reserve, innate woodland, and water
+sections), `plan/map-and-regions.md` (sector natural-state fields)
 
 **Depends on:** U00, C02, M00
 
+This panel shows the sector's *natural* quantities — structured sector state such as
+`SectorNaturalState.innateWoodlandBiomassKg`, `waterStockM3`, and `reserves` — never the
+company-wide inventory. It is a distinct, separately owned pool from `U02a-1`'s inventory panel:
+per the plan's one-material-inventory decision, natural stock never enters inventory except
+through a compatible extraction/forestry facility. Do not merge this with `U02a-1` or read from
+`CampaignState.inventory`.
+
 **Deliverables:**
 
-- Read-only summary of the (currently single) sector: name, biome, access state, distance, and
-  its `C02` natural-resource definition values (innate woodland/water capacity and initial
-  stock, finite reserves) where present.
-- A list of the sector's sites, each independently selectable through a normal focusable
-  control (not a canvas click — spatial hit-testing is `U01e`'s job and is not a dependency
-  here).
-- Selecting a site shows its tags and, if a facility exists there, the facility's definition
-  details; otherwise a clear "no facility built" state.
-- No build/placement controls — this panel is display-only.
+- Read-only summary of the (currently single) sector's natural quantities: innate woodland
+  biomass (and viability, if the sector has woodland), local water stock, and known finite
+  sector reserves (remaining quantity and survey confidence) keyed by resource type.
+- A reserve resource the sector does not have is omitted, not shown as zero.
+- Survey uncertainty is visibly distinguished from a confirmed reading — see the survey-related
+  fields on `SectorReserveRuntimeState`.
+- No site list, no per-site selection, and no facility detail — that scope moved to `U02a-4`,
+  shelved for now (see its card for why).
 
-**Acceptance:** normal controls are keyboard accessible; selection state is internal to the
-panel, not read from or written to canvas/camera state; panel reflects real `CampaignState`
-rather than fixture-only data; no facility can be created or modified from this panel.
+**Acceptance:** panel reflects real `CampaignState` sector-natural fields, not fixture-only
+data or the company inventory; updates from events/read-only state, not polling; unsurveyed
+reserves are visually distinguished from surveyed ones; no facility, site, or inventory data
+appears on this panel.
 
 ### U02a-3 — Research panel
 
@@ -747,6 +760,37 @@ rather than fixture-only data; no facility can be created or modified from this 
 
 **Acceptance:** status classification matches `ResearchManager`'s own prerequisite rules with no
 duplicated/hard-coded node IDs; panel updates from events/read-only state, not polling.
+
+### U02a-4 — Sector site and facility detail (shelved)
+
+**Status:** shelved. Do not start until `U01e` (remainder) and `U02` exist.
+
+**Why shelved:** an earlier draft of this scope lived inside `U02a-2` and gave the site list its
+own DOM-only "selected site" state, explicitly isolated from canvas/camera state. But `U01e`'s
+remaining deliverables build a *second*, canvas-driven selected-site concept for hit testing and
+highlight rendering, feeding `U02`'s placement queries. Building the panel-only selection first
+would create two disconnected trackers for the same fact — clicking a site on the map would not
+update the panel, and selecting it in the panel would not highlight or pan to it on the map —
+which is the ownership-clarity problem `plan/code-architecture.md` warns against. This task
+waits until `U01e`/`U02` land a shared "selected site" concept so this panel can read it instead
+of inventing its own.
+
+**Depends on:** U01e (remainder), U02, C02, M00
+
+**Deliverables (once unblocked):**
+
+- Sector name, biome, access state, and distance.
+- A list of the sector's sites.
+- Selecting a site — through the shared selection mechanism `U01e`/`U02` introduce, not a
+  panel-private one — shows its tags and, if a facility exists there, the facility's definition
+  details; otherwise a clear "no facility built" state.
+- No build/placement controls — this panel remains display-only.
+
+**Acceptance:** site selection reads from the shared selected-site state `U01e`/`U02`
+introduced, not a tracker private to this panel; selecting a site on the canvas is reflected
+here and selecting it here is reflected on the canvas; normal controls remain keyboard
+accessible; panel reflects real `CampaignState`, not fixture-only data; no facility can be
+created or modified from this panel.
 
 ## U02 — Build controls and research assignment
 

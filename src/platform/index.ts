@@ -8,3 +8,4 @@ export type {
   KeyboardConfig,
 } from "./Keyboard";
 export type { KeyboardEventSource } from "./KeyboardEventSource";
+export { isCheatsEnabled, setCheatsEnabled } from "./CheatFlags";
