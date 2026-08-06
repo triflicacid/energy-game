@@ -68,6 +68,14 @@ describe("Application", () => {
     app.dispose();
   });
 
+  it("getCampaignState() seeds the starting inventory from initial-inventory.json", () => {
+    const app = makeApp();
+    const { quantities } = app.getCampaignState().inventory;
+    expect(quantities.timber).toBe(250);
+    expect(quantities.lumber).toBe(100);
+    app.dispose();
+  });
+
   it("does not start the frame loop before start() is called", () => {
     makeApp();
     expect(scheduler.requestAnimationFrame).not.toHaveBeenCalled();

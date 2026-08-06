@@ -8,6 +8,17 @@ import type { Disposable } from "@shared/Disposable";
 import iconPause from "./icon-pause.svg?raw";
 import iconResume from "./icon-resume.svg?raw";
 
+export { InventoryPanel } from "./InventoryPanel";
+export { InventoryModal } from "./InventoryModal";
+export {
+  collectInventoryRows,
+  sortInventoryRows,
+  type InventoryRow,
+  type InventorySortMode,
+} from "./InventoryRows";
+export { getDock, type DockSide } from "./Dock";
+export { hasIcon, resolveIconStyle, type ResolvedIconStyle } from "./IconResolver";
+
 /** returns the first element matching selector under root, or throws if none exists */
 function queryRequired<T extends HTMLElement>(root: ParentNode, selector: string): T {
   const el = root.querySelector<T>(selector);

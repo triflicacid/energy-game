@@ -134,13 +134,15 @@ describe("loadBundledContent", () => {
     expect(result.bundle.plantedForestProfiles.length).toBeGreaterThan(0);
   });
 
-  it("fixture resources include timber and wood-waste, each with an iconId", () => {
+  it("fixture resources include timber, wood-waste, and lumber, each with an iconId", () => {
     const result = loadBundledContent();
     if (!result.ok) throw new Error(JSON.stringify(result.issues));
     const timber = result.bundle.resources.find((r) => r.id === "timber");
     const woodWaste = result.bundle.resources.find((r) => r.id === "wood-waste");
+    const lumber = result.bundle.resources.find((r) => r.id === "lumber");
     expect(timber?.iconId).toBe("icon-timber");
     expect(woodWaste?.iconId).toBe("icon-wood-waste");
+    expect(lumber?.iconId).toBe("icon-lumber");
   });
 
   it("fixture buildings include forestry-operation, waterwheel, and mechanical-workshop, all type generic", () => {

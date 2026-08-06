@@ -20,5 +20,16 @@
     "waste": true,
     "hazardous": false,
     "iconId": "icon-wood-waste"
+  },
+  {
+    "id": "lumber",
+    "category": "organic",
+    "unit": "kg",
+    "storable": true,
+    "importable": true,
+    "renewable": true,
+    "waste": false,
+    "hazardous": false,
+    "iconId": "icon-lumber"
   }
 ]

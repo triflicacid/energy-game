@@ -54,6 +54,7 @@ Content:
 - Sector-owned innate woodland that grows while viable and can be permanently depleted
 - Player-planted forest instances and freshly planted, growing, mature/full, semi-harvested/sparse, and nearly-empty sprites
 - Inventory icons for timber, wood waste, and every other inventory resource in the slice
+- ✅ Inventory panel and full sortable popup (`U02a-1`, see [implementation tasks](implementation-tasks.md))
 - Logging, sawmill, mechanical workshop, and charcoal kiln
 - Waterwheel and windmill
 - Site-local mechanical-power network
