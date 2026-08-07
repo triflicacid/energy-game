@@ -15,6 +15,7 @@ export {
   type QuantityRow,
   type QuantitySortMode,
   type QuantityRowCheatOptions,
+  type QuantityAddCandidate,
 } from "./QuantityRows";
 export type { QuantitySource } from "./QuantitySource";
 export { INVENTORY_SOURCE } from "./InventorySource";

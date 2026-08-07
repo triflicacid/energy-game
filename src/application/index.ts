@@ -174,6 +174,32 @@ export class Application implements Disposable {
     this.bus.publish("sector-natural:changed", { sectorId, field: "reserve", resourceId, qty: clamped });
   }
 
+  /** cheat only: clears a sector's innate woodland entirely, back to none (not just zero biomass); does nothing unless cheats are enabled */
+  public cheatClearSectorWoodlandBiomass(sectorId: string): void {
+    if (!isCheatsEnabled()) return;
+    const sector = this.requireSector(sectorId, "cheatClearSectorWoodlandBiomass");
+    this.setSectorNatural(sectorId, { ...sector.natural, innateWoodlandBiomassKg: null });
+    this.bus.publish("sector-natural:changed", { sectorId, field: "woodland", qty: 0 });
+  }
+
+  /** cheat only: clears a sector's local water entirely, back to none (not just zero stock); does nothing unless cheats are enabled */
+  public cheatClearSectorWaterStock(sectorId: string): void {
+    if (!isCheatsEnabled()) return;
+    const sector = this.requireSector(sectorId, "cheatClearSectorWaterStock");
+    this.setSectorNatural(sectorId, { ...sector.natural, waterStockM3: null });
+    this.bus.publish("sector-natural:changed", { sectorId, field: "water", qty: 0 });
+  }
+
+  /** cheat only: removes one of a sector's finite reserve entries entirely, not just zeroes its quantity; does nothing unless cheats are enabled */
+  public cheatRemoveSectorReserve(sectorId: string, resourceId: string): void {
+    if (!isCheatsEnabled()) return;
+    const sector = this.requireSector(sectorId, "cheatRemoveSectorReserve");
+    const reserves = { ...sector.natural.reserves };
+    Reflect.deleteProperty(reserves, resourceId);
+    this.setSectorNatural(sectorId, { ...sector.natural, reserves });
+    this.bus.publish("sector-natural:changed", { sectorId, field: "reserve", resourceId, qty: 0 });
+  }
+
   /** current measured rendering FPS (0 when the loop is not running) */
   public getFps(): number {
     return this.frameLoop.getActualFps();

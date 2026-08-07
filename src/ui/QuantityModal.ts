@@ -6,13 +6,18 @@ import { isCheatsEnabled } from "@platform/CheatFlags";
 import type { Disposable } from "@shared/Disposable";
 import type { Unsubscribe } from "@shared";
 import {
+  buildQuantityAddRowEl,
   buildQuantityEmptyEl,
   buildQuantityRowEl,
+  closeQuantityAddPicker,
   sortQuantityRows,
   type QuantityRow,
   type QuantitySortMode,
 } from "./QuantityRows";
 import type { QuantitySource } from "./QuantitySource";
+
+/** starting quantity given to a row added through the cheat-only add picker */
+const CHEAT_ADD_STARTING_QTY = 100;
 
 const SORT_OPTIONS: readonly { readonly mode: QuantitySortMode; readonly label: string }[] = [
   { mode: "name", label: "Name" },
@@ -115,6 +120,9 @@ export class QuantityModal implements Disposable {
 
   /** resorts by the active sort mode and rebuilds; call on open or when a sort button is clicked */
   private renderSorted(): void {
+    // a deliberate resort invalidates row positions outright; close any picker rather than leave
+    // it anchored to a row that's about to move or disappear
+    closeQuantityAddPicker(this.dialog);
     const rows = sortQuantityRows(this.source.collectRows(this.app), this.sortMode);
     this.displayOrder = rows.map((row) => row.id);
     this.renderRows(rows);
@@ -141,16 +149,34 @@ export class QuantityModal implements Disposable {
   }
 
   private renderRows(rows: readonly QuantityRow[]): void {
-    // cheat quantity editing (chevrons plus click to edit) only ever shows in this popup, never
-    // in the docked QuantityPanel card
+    // deliberately does not close an open add picker here: this runs on every passive background
+    // refresh too (tick, cheat-change events), and the picker is a popup owned by this.dialog, not
+    // this.list, so rebuilding the row list underneath it does not disturb it. Closing here would
+    // yank the picker away mid-click on anything but the fastest possible selection.
+
+    // cheat quantity editing (chevrons plus click to edit), the remove button, and the
+    // add-a-resource tile only ever show in this popup, never in the docked QuantityPanel card
     const setQuantity = this.source.cheatSetQuantity;
-    const cheat =
-      isCheatsEnabled() && setQuantity
-        ? { onSetQuantity: (id: string, qty: number) => setQuantity(this.app, id, qty) }
-        : undefined;
-    this.list.replaceChildren(...rows.map((row) => buildQuantityRowEl(row, cheat)));
+    const removeRow = this.source.cheatRemoveRow;
+    const cheatOn = isCheatsEnabled() && setQuantity !== undefined;
+    const cheat = cheatOn
+      ? {
+          onSetQuantity: (id: string, qty: number) => setQuantity(this.app, id, qty),
+          onRemove: removeRow ? (id: string) => removeRow(this.app, id) : undefined,
+        }
+      : undefined;
+
+    const rowEls = rows.map((row) => buildQuantityRowEl(row, cheat));
     if (rows.length === 0) {
-      this.list.appendChild(buildQuantityEmptyEl(this.source.emptyMessage));
+      rowEls.push(buildQuantityEmptyEl(this.source.emptyMessage));
     }
+    if (cheatOn && this.source.listAddableRows) {
+      const candidates = this.source.listAddableRows(this.app);
+      if (candidates.length > 0) {
+        const onAdd = (id: string): void => setQuantity(this.app, id, CHEAT_ADD_STARTING_QTY);
+        rowEls.push(buildQuantityAddRowEl(candidates, onAdd, this.dialog));
+      }
+    }
+    this.list.replaceChildren(...rowEls);
   }
 }

@@ -48,6 +48,8 @@ export type QuantityRowCheatOptions = {
   readonly onSetQuantity: (id: string, qty: number) => void;
   /** amount the chevrons add/subtract per click; defaults to 1 */
   readonly step?: number;
+  /** called with the row id to remove it entirely; omit to hide the remove button */
+  readonly onRemove?: (id: string) => void;
 };
 
 /** formats a row's quantity+unit for display, e.g. "250 kg" */
@@ -60,7 +62,7 @@ export function buildQuantityRowEl(row: QuantityRow, cheat?: QuantityRowCheatOpt
   const el = document.createElement("li");
   el.classList.add("quantity-row");
   el.classList.toggle("quantity-row--unsurveyed", row.unsurveyed === true);
-  el.appendChild(buildQuantityIconEl(row));
+  el.appendChild(buildQuantityIconEl(row.iconId, row.id));
 
   const label = document.createElement("span");
   label.classList.add("quantity-label");
@@ -69,7 +71,22 @@ export function buildQuantityRowEl(row: QuantityRow, cheat?: QuantityRowCheatOpt
 
   el.appendChild(cheat ? buildCheatQtyEl(row, cheat) : buildStaticQtyEl(row));
 
+  if (cheat?.onRemove) {
+    el.appendChild(buildRemoveBtnEl(row, cheat.onRemove));
+  }
+
   return el;
+}
+
+/** cheat-only "×" button that removes a row entirely */
+function buildRemoveBtnEl(row: QuantityRow, onRemove: (id: string) => void): HTMLElement {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.classList.add("quantity-remove-btn");
+  btn.textContent = "×";
+  btn.setAttribute("aria-label", `remove ${row.id}`);
+  btn.addEventListener("click", () => onRemove(row.id));
+  return btn;
 }
 
 /** plain readonly quantity display */
@@ -150,15 +167,18 @@ function buildQtyInputEl(row: QuantityRow, cheat: QuantityRowCheatOptions, value
   return input;
 }
 
-/** returns the icon element for a row: the resolved sprite crop, or a visible placeholder */
-function buildQuantityIconEl(row: QuantityRow): HTMLElement {
+/**
+ * returns the icon element for iconId: the resolved sprite crop, or a visible placeholder.
+ * shared by row display and the add picker's option list.
+ */
+function buildQuantityIconEl(iconId: string | undefined, ariaId: string): HTMLElement {
   const icon = document.createElement("span");
   icon.classList.add("quantity-icon");
 
-  if (row.iconId !== undefined && hasIcon(row.iconId)) {
-    Object.assign(icon.style, resolveIconStyle(row.iconId));
+  if (iconId !== undefined && hasIcon(iconId)) {
+    Object.assign(icon.style, resolveIconStyle(iconId));
     icon.setAttribute("role", "img");
-    icon.setAttribute("aria-label", row.id);
+    icon.setAttribute("aria-label", ariaId);
   } else {
     icon.classList.add("quantity-icon--missing");
     icon.setAttribute("role", "img");
@@ -174,4 +194,139 @@ export function buildQuantityEmptyEl(message: string): HTMLElement {
   empty.classList.add("quantity-empty");
   empty.textContent = message;
   return empty;
+}
+
+/** an id not currently shown as a row, offered by the cheat-only "add" picker */
+export type QuantityAddCandidate = {
+  readonly id: string;
+  readonly label: string;
+  readonly iconId: string | undefined;
+};
+
+/**
+ * cheat-only "add a resource" tile: a dashed plus square that opens a floating picker of ids not
+ * currently shown, each rendered with its own icon. Picking one calls onAdd(id); the caller
+ * decides the starting quantity.
+ *
+ * the picker is a true popup, not inline content: it's appended to portalRoot (the dialog itself,
+ * not this row or the scrollable row list) and fixed-positioned under the anchor button, so it is
+ * never clipped or forced into the row list's own scroll area.
+ */
+export function buildQuantityAddRowEl(
+  candidates: readonly QuantityAddCandidate[],
+  onAdd: (id: string) => void,
+  portalRoot: HTMLElement,
+): HTMLElement {
+  const el = document.createElement("li");
+  el.classList.add("quantity-row", "quantity-row--add");
+
+  const iconBtn = document.createElement("button");
+  iconBtn.type = "button";
+  iconBtn.classList.add("quantity-icon", "quantity-icon--add");
+  iconBtn.textContent = "+";
+  iconBtn.setAttribute("aria-label", "add a resource");
+  iconBtn.setAttribute("aria-haspopup", "listbox");
+  iconBtn.addEventListener("click", () => openAddPicker(candidates, onAdd, iconBtn, portalRoot));
+
+  const label = document.createElement("span");
+  label.classList.add("quantity-label");
+  label.textContent = "Add resource";
+
+  el.append(iconBtn, label);
+  return el;
+}
+
+/** closes and removes any add picker already open under portalRoot; safe to call when none is open */
+export function closeQuantityAddPicker(portalRoot: HTMLElement): void {
+  portalRoot.querySelector(":scope > .quantity-add-picker")?.remove();
+}
+
+/** builds, positions, and opens the floating candidate picker anchored under anchorEl */
+function openAddPicker(
+  candidates: readonly QuantityAddCandidate[],
+  onAdd: (id: string) => void,
+  anchorEl: HTMLElement,
+  portalRoot: HTMLElement,
+): void {
+  closeQuantityAddPicker(portalRoot); // at most one picker open at a time
+
+  const list = document.createElement("div");
+  list.classList.add("quantity-add-picker");
+  list.setAttribute("role", "listbox");
+  list.setAttribute("aria-label", "add a resource");
+
+  let settled = false; // an option was picked, or the picker was cancelled; ignore further events
+  const close = (): void => {
+    if (settled) return;
+    settled = true;
+    list.remove();
+  };
+
+  const options = candidates.map(({ id, label, iconId }) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.classList.add("quantity-add-option");
+    option.setAttribute("role", "option");
+    option.appendChild(buildQuantityIconEl(iconId, id));
+    const text = document.createElement("span");
+    text.textContent = label;
+    option.appendChild(text);
+    option.addEventListener("click", () => {
+      if (settled) return;
+      settled = true;
+      list.remove();
+      onAdd(id);
+    });
+    return option;
+  });
+  list.append(...options);
+
+  // a mousedown on one option while another has focus shifts focus, which fires blur/focusout on
+  // the old option; that bubbles to the focusout handler below and can close the picker (removing
+  // it from the DOM) before the click event this same gesture is about to produce ever fires —
+  // so clicking anything but the initially-focused option silently did nothing. preventDefault on
+  // mousedown suppresses the browser's default focus-shift entirely, so no such focusout fires for
+  // clicks within the picker; the click event (and onAdd) still fires normally afterward.
+  list.addEventListener("mousedown", (event) => event.preventDefault());
+
+  list.addEventListener("keydown", (event) => {
+    const current = options.indexOf(document.activeElement as HTMLButtonElement);
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      options[Math.min(current + 1, options.length - 1)]?.focus();
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      options[Math.max(current - 1, 0)]?.focus();
+    } else if (event.key === "Escape") {
+      close();
+      anchorEl.focus();
+    }
+  });
+
+  // deferred so a focus move between two options in this same list is observed before deciding
+  // nothing in the picker has focus any more; also guards a picker already removed some other way
+  list.addEventListener("focusout", () => {
+    queueMicrotask(() => {
+      if (list.isConnected && !list.contains(document.activeElement)) close();
+    });
+  });
+
+  portalRoot.appendChild(list);
+  positionAddPicker(list, anchorEl);
+
+  // defer focus so the click that opened the picker finishes first
+  queueMicrotask(() => options[0]?.focus());
+}
+
+/** fixed-positions the picker directly under its anchor button, clamped to stay on screen */
+function positionAddPicker(picker: HTMLElement, anchor: HTMLElement): void {
+  const anchorRect = anchor.getBoundingClientRect();
+  picker.style.top = `${anchorRect.bottom + 4}px`;
+  picker.style.left = `${anchorRect.left}px`;
+
+  const pickerRect = picker.getBoundingClientRect();
+  const maxLeft = window.innerWidth - pickerRect.width - 8;
+  if (pickerRect.left > maxLeft) {
+    picker.style.left = `${Math.max(8, maxLeft)}px`;
+  }
 }

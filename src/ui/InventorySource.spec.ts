@@ -42,4 +42,47 @@ describe("INVENTORY_SOURCE", () => {
 
     app.dispose();
   });
+
+  it("listAddableRows offers catalog resources not currently in the inventory", () => {
+    const app = makeApp();
+    const candidates = INVENTORY_SOURCE.listAddableRows?.(app) ?? [];
+
+    expect(candidates.some((c) => c.id === "wood-waste")).toBe(true); // starts at 0
+    expect(candidates.some((c) => c.id === "timber")).toBe(false); // already 250
+    expect(candidates.some((c) => c.id === "lumber")).toBe(false); // already 100
+
+    app.dispose();
+  });
+
+  it("listAddableRows no longer offers a resource once it's added", () => {
+    const app = makeApp();
+    setCheatsEnabled(true);
+    app.cheatSetInventoryQuantity("wood-waste", 100);
+
+    const candidates = INVENTORY_SOURCE.listAddableRows?.(app) ?? [];
+    expect(candidates.some((c) => c.id === "wood-waste")).toBe(false);
+
+    app.dispose();
+  });
+
+  it("cheatRemoveRow zeroes the quantity, which removes the row from collectRows", () => {
+    const app = makeApp();
+    setCheatsEnabled(true);
+
+    INVENTORY_SOURCE.cheatRemoveRow?.(app, "timber");
+    expect(app.getCampaignState().inventory.quantities.timber).toBe(0);
+    expect(INVENTORY_SOURCE.collectRows(app).some((row) => row.id === "timber")).toBe(false);
+
+    app.dispose();
+  });
+
+  it("cheatRemoveRow makes the resource addable again", () => {
+    const app = makeApp();
+    setCheatsEnabled(true);
+
+    INVENTORY_SOURCE.cheatRemoveRow?.(app, "timber");
+    expect(INVENTORY_SOURCE.listAddableRows?.(app).some((c) => c.id === "timber")).toBe(true);
+
+    app.dispose();
+  });
 });

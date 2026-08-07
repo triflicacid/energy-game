@@ -3,7 +3,7 @@
 // this is the only inventory-specific file left — QuantityPanel/QuantityModal are generic.
 
 import type { Application } from "@application";
-import type { QuantityRow } from "./QuantityRows";
+import type { QuantityAddCandidate, QuantityRow } from "./QuantityRows";
 import type { QuantitySource } from "./QuantitySource";
 
 /** derives a readable placeholder label from a resource id; real localization lands later */
@@ -33,6 +33,15 @@ function collectRows(app: Application): QuantityRow[] {
     });
 }
 
+/** every catalog resource with no quantity in the inventory yet */
+function listAddableRows(app: Application): QuantityAddCandidate[] {
+  const { quantities } = app.getCampaignState().inventory;
+  const catalog = app.getCatalog();
+  return [...catalog.resources.values()]
+    .filter((resource) => (quantities[resource.id] ?? 0) === 0)
+    .map((resource) => ({ id: resource.id, label: placeholderLabel(resource.id), iconId: resource.iconId }));
+}
+
 /** the company-wide inventory as a QuantitySource, for `QuantityPanel`/`QuantityModal` */
 export const INVENTORY_SOURCE: QuantitySource = {
   title: "Inventory",
@@ -40,6 +49,9 @@ export const INVENTORY_SOURCE: QuantitySource = {
   defaultSortMode: "qty-desc",
   collectRows,
   cheatSetQuantity: (app, id, qty) => app.cheatSetInventoryQuantity(id, qty),
+  // zeroing the quantity already removes the row: collectRows filters out zero-quantity entries
+  cheatRemoveRow: (app, id) => app.cheatSetInventoryQuantity(id, 0),
+  listAddableRows,
   subscribeRefresh: (app, refresh) => [
     app.getEvents().subscribe("tick:after", refresh),
     app.getEvents().subscribe("inventory:changed", refresh),
