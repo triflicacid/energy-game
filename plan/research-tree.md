@@ -15,6 +15,8 @@ A node can require:
 
 Research should unlock capability, not grant a finished plant for free.
 
+Every research node resolves its own stable icon ID, the same mandatory-icon rule the inventory catalog uses (see `plan/sprites-and-atlases.md`). This is a required end state, not yet implemented: `ResearchNodeDef` has no icon field today, and the initial read-only research panel (`U02a-3` in `plan/implementation-tasks.md`) ships without per-node icons. Adding the field, the validation rule, and the actual icon assets is separate, deferred work — see `A02` in `plan/implementation-tasks.md`.
+
 ## Assignment model
 
 Each research facility (workshop, laboratory) is independently assigned to a target node. Multiple facilities may target the same node or different nodes simultaneously. The `ResearchManager` accepts points directed at a named node each tick; it does not impose a single global active node.

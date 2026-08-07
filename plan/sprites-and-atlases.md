@@ -103,6 +103,8 @@ Possible groups:
 
 Inventory resource icons form a required presentation catalog even if they remain individual SVGs rather than joining the world atlas. Every inventory resource definition must resolve a stable icon ID; missing icon references are content-validation errors.
 
+Research nodes get the same treatment: every `ResearchNodeDef` must eventually resolve its own stable icon ID, with a missing reference treated as a content-validation error, exactly like the inventory rule above. This is a stated end goal, not a current requirement — `ResearchNodeDef` has no icon field yet, and the initial read-only research panel (`U02a-3`) ships without per-node icons. Adding the field, the validation rule, and the actual icon assets is separate, deferred work; see `A02` in `plan/implementation-tasks.md`.
+
 Reasons to split atlases include:
 
 - Browser/GPU texture-size limits

@@ -52,6 +52,7 @@ Every delegated task must preserve these decisions unless the owner explicitly c
 20. **One material inventory:** extraction, harvest, processing, imports, decommissioning, and recycling use exactly one company-wide inventory. There are no sector, warehouse, extractor, or general facility inventories in the current scope.
 21. **Recovery is not replenishment:** recycled goods enter company inventory and never increase finite reserves, woodland biomass, or sector water.
 22. **Required resource art:** every inventory resource resolves an icon; forest presentation covers freshly planted, growing, mature/full, semi-harvested/sparse, and nearly-empty states, while depleted forests have no sprite.
+23. **Required research art (future):** every research node resolves its own icon, the same mandatory-icon rule as decision 22, once `ResearchNodeDef` gets an icon field and `A02` authors the assets. Not yet enforced — `U02a-3` ships icon-free — but binding once `A02` lands.
 
 ## Agent execution rules
 
@@ -577,6 +578,35 @@ Integrate a tested scenario:
 
 **Acceptance:** every required forest state and inventory resource resolves a stable visual ID; missing, duplicate, stale, or unreferenced assets fail clearly; forest overlays preserve biome transparency; resource icons remain legible at inventory-row size; asset generation/check mode and relevant visual tests pass.
 
+## A02 — Research node icon assets (deferred)
+
+**Status:** deferred, not yet scheduled. Explicitly out of scope for `U02a-3` — that panel ships
+read-only, icon-free, deriving status from text alone.
+
+**Why deferred:** `ResearchNodeDef` has no icon field today, and giving every research node its
+own icon is a real, separate content-authoring pass — the same shape of work `A01` did for forest
+states and inventory resources, not a small addition to a UI task. It also is not yet clear
+whether icons should be per-node or per-branch (dozens of nodes across many eras vs. one icon per
+major branch such as water, wind, forestry, materials, grid, nuclear); that call should follow
+`plan/research-tree.md`'s major-branches list once real node content exists, not be guessed here.
+
+**Depends on:** C01, A00 (unblocked whenever picked up; not currently gated on `U02a-3`)
+
+**Deliverables (once unblocked):**
+
+- Add an `iconId` field to `ResearchNodeDef` (content/defs.ts) and migrate all research-node fixtures.
+- Extend content validation so every research node resolves a known icon, mirroring the existing
+  mandatory inventory-icon rule; a missing reference is a content-validation error, not a silent
+  blank.
+- Author or generate a stable icon asset per node (or per branch, per the open question above) in
+  the same 16×16-pixel-art style as the existing icon set, packed through the existing
+  deterministic atlas pipeline.
+- Wire `U02a-3`'s research panel to render the resolved icon per row once this lands.
+
+**Acceptance:** every research node resolves a known icon; an unresolvable iconId is a precise
+validation issue, not a blank or a silent fallback; icons remain legible at research-row size;
+asset generation/check mode and relevant tests pass.
+
 ## U01a — Atlas and canvas drawing foundation
 
 **Depends on:** U00, A00
@@ -778,6 +808,8 @@ an unknown sector/resource target the same way `cheatSetInventoryQuantity` does.
 - In-progress nodes show accumulated progress against their cost.
 - No per-facility assignment control and no global-assignment shortcut — both require
   facility-state that does not exist yet (see above) and remain with `U02`.
+- No per-node icon — `ResearchNodeDef` has no icon field yet; that's `A02`, a separate deferred
+  content-authoring task, not part of this panel.
 
 **Acceptance:** status classification matches `ResearchManager`'s own prerequisite rules with no
 duplicated/hard-coded node IDs; panel updates from events/read-only state, not polling.
