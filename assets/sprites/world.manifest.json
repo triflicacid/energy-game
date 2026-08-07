@@ -374,6 +374,14 @@
       "footprintW": 1, "footprintH": 1,
       "anchorX": 0, "anchorY": 0,
       "atlasRow": 5
+    },
+    {
+      "id": "icon-research",
+      "src": "icons/icon-research.svg",
+      "pixelWidth": 32, "pixelHeight": 32,
+      "footprintW": 1, "footprintH": 1,
+      "anchorX": 0, "anchorY": 0,
+      "atlasRow": 5
     }
   ]
 }

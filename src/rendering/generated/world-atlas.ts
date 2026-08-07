@@ -2,7 +2,7 @@
 // atlas: 2048x512
 
 export type WorldSpriteId =
-  | "biome-coastal" | "biome-cold" | "biome-desert" | "biome-mountain" | "biome-offshore" | "biome-temperate" | "biome-volcanic" | "biome-wetland" | "reservoir-water-00" | "reservoir-water-01" | "reservoir-water-02" | "reservoir-water-03" | "reservoir-water-04" | "reservoir-water-05" | "reservoir-water-06" | "reservoir-water-07" | "reservoir-water-08" | "reservoir-water-09" | "reservoir-water-0a" | "reservoir-water-0b" | "reservoir-water-0c" | "reservoir-water-0d" | "reservoir-water-0e" | "reservoir-water-0f" | "forest-site" | "town" | "town-tier-1" | "town-tier-2" | "town-tier-3" | "town-tier-4" | "town-tier-5" | "town-tier-6" | "waterwheel" | "mechanical-workshop" | "innate-woodland-mature-full" | "innate-woodland-nearly-empty" | "innate-woodland-semi-harvested-sparse" | "planted-forest-freshly-planted" | "planted-forest-growing" | "planted-forest-mature-full" | "planted-forest-nearly-empty" | "planted-forest-semi-harvested-sparse" | "icon-lumber" | "icon-timber" | "icon-water" | "icon-wood-waste";
+  | "biome-coastal" | "biome-cold" | "biome-desert" | "biome-mountain" | "biome-offshore" | "biome-temperate" | "biome-volcanic" | "biome-wetland" | "reservoir-water-00" | "reservoir-water-01" | "reservoir-water-02" | "reservoir-water-03" | "reservoir-water-04" | "reservoir-water-05" | "reservoir-water-06" | "reservoir-water-07" | "reservoir-water-08" | "reservoir-water-09" | "reservoir-water-0a" | "reservoir-water-0b" | "reservoir-water-0c" | "reservoir-water-0d" | "reservoir-water-0e" | "reservoir-water-0f" | "forest-site" | "town" | "town-tier-1" | "town-tier-2" | "town-tier-3" | "town-tier-4" | "town-tier-5" | "town-tier-6" | "waterwheel" | "mechanical-workshop" | "innate-woodland-mature-full" | "innate-woodland-nearly-empty" | "innate-woodland-semi-harvested-sparse" | "planted-forest-freshly-planted" | "planted-forest-growing" | "planted-forest-mature-full" | "planted-forest-nearly-empty" | "planted-forest-semi-harvested-sparse" | "icon-lumber" | "icon-research" | "icon-timber" | "icon-water" | "icon-wood-waste";
 
 export type AtlasSpriteDescriptor = {
   readonly id: WorldSpriteId;
@@ -63,7 +63,8 @@ export const WORLD_SPRITES: Readonly<Record<WorldSpriteId, AtlasSpriteDescriptor
   "planted-forest-nearly-empty": { id: "planted-forest-nearly-empty", x: 398, y: 282, w: 64, h: 64, anchorX: 0, anchorY: 0, footprintW: 1, footprintH: 1 },
   "planted-forest-semi-harvested-sparse": { id: "planted-forest-semi-harvested-sparse", x: 464, y: 282, w: 64, h: 64, anchorX: 0, anchorY: 0, footprintW: 1, footprintH: 1 },
   "icon-lumber": { id: "icon-lumber", x: 2, y: 348, w: 32, h: 32, anchorX: 0, anchorY: 0, footprintW: 1, footprintH: 1 },
-  "icon-timber": { id: "icon-timber", x: 36, y: 348, w: 32, h: 32, anchorX: 0, anchorY: 0, footprintW: 1, footprintH: 1 },
-  "icon-water": { id: "icon-water", x: 70, y: 348, w: 32, h: 32, anchorX: 0, anchorY: 0, footprintW: 1, footprintH: 1 },
-  "icon-wood-waste": { id: "icon-wood-waste", x: 104, y: 348, w: 32, h: 32, anchorX: 0, anchorY: 0, footprintW: 1, footprintH: 1 }
+  "icon-research": { id: "icon-research", x: 36, y: 348, w: 32, h: 32, anchorX: 0, anchorY: 0, footprintW: 1, footprintH: 1 },
+  "icon-timber": { id: "icon-timber", x: 70, y: 348, w: 32, h: 32, anchorX: 0, anchorY: 0, footprintW: 1, footprintH: 1 },
+  "icon-water": { id: "icon-water", x: 104, y: 348, w: 32, h: 32, anchorX: 0, anchorY: 0, footprintW: 1, footprintH: 1 },
+  "icon-wood-waste": { id: "icon-wood-waste", x: 138, y: 348, w: 32, h: 32, anchorX: 0, anchorY: 0, footprintW: 1, footprintH: 1 }
 } as const;
