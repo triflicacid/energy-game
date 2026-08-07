@@ -1,7 +1,7 @@
 import "./style.css";
 import { createApplication } from "@application";
 import { CanvasRenderer } from "@rendering";
-import { UiShell, InventoryPanel } from "@ui";
+import { UiShell, QuantityPanel, INVENTORY_SOURCE, SECTOR_NATURAL_SOURCE } from "@ui";
 
 const canvas = document.getElementById("game-canvas");
 const uiRoot = document.getElementById("ui-root");
@@ -16,5 +16,6 @@ if (!(uiRoot instanceof HTMLElement)) {
 const app = createApplication(canvas, uiRoot);
 new CanvasRenderer(app);
 new UiShell(app);
-new InventoryPanel(app);
+new QuantityPanel(app, INVENTORY_SOURCE);
+new QuantityPanel(app, SECTOR_NATURAL_SOURCE);
 app.start();

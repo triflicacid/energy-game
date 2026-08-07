@@ -8,14 +8,18 @@ import type { Disposable } from "@shared/Disposable";
 import iconPause from "./icon-pause.svg?raw";
 import iconResume from "./icon-resume.svg?raw";
 
-export { InventoryPanel } from "./InventoryPanel";
-export { InventoryModal } from "./InventoryModal";
+export { QuantityPanel } from "./QuantityPanel";
+export { QuantityModal } from "./QuantityModal";
 export {
-  collectInventoryRows,
-  sortInventoryRows,
-  type InventoryRow,
-  type InventorySortMode,
-} from "./InventoryRows";
+  sortQuantityRows,
+  type QuantityRow,
+  type QuantitySortMode,
+  type QuantityRowCheatOptions,
+  type QuantityAddCandidate,
+} from "./QuantityRows";
+export type { QuantitySource } from "./QuantitySource";
+export { INVENTORY_SOURCE } from "./InventorySource";
+export { SECTOR_NATURAL_SOURCE } from "./SectorNaturalSource";
 export { getDock, type DockSide } from "./Dock";
 export { hasIcon, resolveIconStyle, type ResolvedIconStyle } from "./IconResolver";
 

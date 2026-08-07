@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { setCheatsEnabled } from "@platform/CheatFlags";
 import { Application, MS_PER_TICK_AT_SPEED_1 } from "./index";
 
 class FakeScheduler {
@@ -250,6 +251,212 @@ describe("Application", () => {
     app.dispose();
 
     expect(onTick).not.toHaveBeenCalled();
+  });
+
+  describe("cheat methods", () => {
+    afterEach(() => {
+      setCheatsEnabled(false);
+    });
+
+    it("cheatSetInventoryQuantity is a no-op while cheats are disabled", () => {
+      const app = makeApp();
+      app.cheatSetInventoryQuantity("timber", 999);
+      expect(app.getCampaignState().inventory.quantities.timber).toBe(250);
+      app.dispose();
+    });
+
+    it("cheatSetInventoryQuantity sets a quantity, clamped to zero, and publishes inventory:changed", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      const onChanged = vi.fn();
+      app.getEvents().subscribe("inventory:changed", onChanged);
+
+      app.cheatSetInventoryQuantity("timber", -5);
+      expect(app.getCampaignState().inventory.quantities.timber).toBe(0);
+      expect(onChanged).toHaveBeenCalledWith({ resourceId: "timber", qty: 0 });
+
+      app.dispose();
+    });
+
+    it("cheatSetInventoryQuantity throws for an unknown resource", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      expect(() => app.cheatSetInventoryQuantity("not-a-real-resource", 1)).toThrow();
+      app.dispose();
+    });
+
+    it("cheatSetSectorWoodlandBiomass is a no-op while cheats are disabled", () => {
+      const app = makeApp();
+      app.cheatSetSectorWoodlandBiomass("sector:1", 500);
+      expect(app.getCampaignState().sectors["sector:1"].natural.innateWoodlandBiomassKg).toBeNull();
+      app.dispose();
+    });
+
+    it("cheatSetSectorWoodlandBiomass sets biomass, clamped to zero, and publishes sector-natural:changed", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      const onChanged = vi.fn();
+      app.getEvents().subscribe("sector-natural:changed", onChanged);
+
+      app.cheatSetSectorWoodlandBiomass("sector:1", -10);
+      expect(app.getCampaignState().sectors["sector:1"].natural.innateWoodlandBiomassKg).toBe(0);
+      expect(onChanged).toHaveBeenCalledWith({ sectorId: "sector:1", field: "woodland", qty: 0 });
+
+      app.dispose();
+    });
+
+    it("cheatSetSectorWoodlandBiomass throws for an unknown sector", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      expect(() => app.cheatSetSectorWoodlandBiomass("no-such-sector", 1)).toThrow();
+      app.dispose();
+    });
+
+    it("cheatSetSectorWaterStock sets water stock, clamped to zero, and publishes sector-natural:changed", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      const onChanged = vi.fn();
+      app.getEvents().subscribe("sector-natural:changed", onChanged);
+
+      app.cheatSetSectorWaterStock("sector:1", 1234);
+      expect(app.getCampaignState().sectors["sector:1"].natural.waterStockM3).toBe(1234);
+      expect(onChanged).toHaveBeenCalledWith({ sectorId: "sector:1", field: "water", qty: 1234 });
+
+      app.dispose();
+    });
+
+    it("setting one natural field leaves the others untouched", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+
+      app.cheatSetSectorReserveQuantity("sector:1", "timber", 50);
+      app.cheatSetSectorWaterStock("sector:1", 10);
+
+      const natural = app.getCampaignState().sectors["sector:1"].natural;
+      expect(natural.reserves.timber).toEqual({ remainingQuantity: 50, surveyed: true });
+      expect(natural.waterStockM3).toBe(10);
+
+      app.dispose();
+    });
+
+    it("cheatSetSectorReserveQuantity sets a reserve, clamped to zero, marks it surveyed, and publishes sector-natural:changed", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      const onChanged = vi.fn();
+      app.getEvents().subscribe("sector-natural:changed", onChanged);
+
+      app.cheatSetSectorReserveQuantity("sector:1", "timber", -3);
+      const reserve = app.getCampaignState().sectors["sector:1"].natural.reserves.timber;
+      expect(reserve).toEqual({ remainingQuantity: 0, surveyed: true });
+      expect(onChanged).toHaveBeenCalledWith({ sectorId: "sector:1", field: "reserve", resourceId: "timber", qty: 0 });
+
+      app.dispose();
+    });
+
+    it("cheatSetSectorReserveQuantity throws for an unknown resource", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      expect(() => app.cheatSetSectorReserveQuantity("sector:1", "not-a-real-resource", 1)).toThrow();
+      app.dispose();
+    });
+
+    it("cheatSetSectorReserveQuantity throws for an unknown sector", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      expect(() => app.cheatSetSectorReserveQuantity("no-such-sector", "timber", 1)).toThrow();
+      app.dispose();
+    });
+
+    it("cheatClearSectorWoodlandBiomass is a no-op while cheats are disabled", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      app.cheatSetSectorWoodlandBiomass("sector:1", 500);
+      setCheatsEnabled(false);
+
+      app.cheatClearSectorWoodlandBiomass("sector:1");
+      expect(app.getCampaignState().sectors["sector:1"].natural.innateWoodlandBiomassKg).toBe(500);
+
+      app.dispose();
+    });
+
+    it("cheatClearSectorWoodlandBiomass resets biomass to null (not zero) and publishes sector-natural:changed", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      app.cheatSetSectorWoodlandBiomass("sector:1", 500);
+      const onChanged = vi.fn();
+      app.getEvents().subscribe("sector-natural:changed", onChanged);
+
+      app.cheatClearSectorWoodlandBiomass("sector:1");
+      expect(app.getCampaignState().sectors["sector:1"].natural.innateWoodlandBiomassKg).toBeNull();
+      expect(onChanged).toHaveBeenCalledWith({ sectorId: "sector:1", field: "woodland", qty: 0 });
+
+      app.dispose();
+    });
+
+    it("cheatClearSectorWoodlandBiomass throws for an unknown sector", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      expect(() => app.cheatClearSectorWoodlandBiomass("no-such-sector")).toThrow();
+      app.dispose();
+    });
+
+    it("cheatClearSectorWaterStock resets water to null (not zero) and publishes sector-natural:changed", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      app.cheatSetSectorWaterStock("sector:1", 1200);
+      const onChanged = vi.fn();
+      app.getEvents().subscribe("sector-natural:changed", onChanged);
+
+      app.cheatClearSectorWaterStock("sector:1");
+      expect(app.getCampaignState().sectors["sector:1"].natural.waterStockM3).toBeNull();
+      expect(onChanged).toHaveBeenCalledWith({ sectorId: "sector:1", field: "water", qty: 0 });
+
+      app.dispose();
+    });
+
+    it("cheatClearSectorWaterStock throws for an unknown sector", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      expect(() => app.cheatClearSectorWaterStock("no-such-sector")).toThrow();
+      app.dispose();
+    });
+
+    it("cheatRemoveSectorReserve deletes the entry entirely (not just zeroes it) and publishes sector-natural:changed", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      app.cheatSetSectorReserveQuantity("sector:1", "timber", 80);
+      const onChanged = vi.fn();
+      app.getEvents().subscribe("sector-natural:changed", onChanged);
+
+      app.cheatRemoveSectorReserve("sector:1", "timber");
+      expect(app.getCampaignState().sectors["sector:1"].natural.reserves.timber).toBeUndefined();
+      expect(Object.hasOwn(app.getCampaignState().sectors["sector:1"].natural.reserves, "timber")).toBe(false);
+      expect(onChanged).toHaveBeenCalledWith({ sectorId: "sector:1", field: "reserve", resourceId: "timber", qty: 0 });
+
+      app.dispose();
+    });
+
+    it("cheatRemoveSectorReserve leaves other reserves untouched", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      app.cheatSetSectorReserveQuantity("sector:1", "timber", 80);
+      app.cheatSetSectorReserveQuantity("sector:1", "lumber", 40);
+
+      app.cheatRemoveSectorReserve("sector:1", "timber");
+      expect(app.getCampaignState().sectors["sector:1"].natural.reserves.lumber).toEqual({
+        remainingQuantity: 40,
+        surveyed: true,
+      });
+
+      app.dispose();
+    });
+
+    it("cheatRemoveSectorReserve throws for an unknown sector", () => {
+      const app = makeApp();
+      setCheatsEnabled(true);
+      expect(() => app.cheatRemoveSectorReserve("no-such-sector", "timber")).toThrow();
+      app.dispose();
+    });
   });
 });
 
